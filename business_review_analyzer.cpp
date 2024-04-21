@@ -29,6 +29,48 @@ enum business_review_type{
     BUSINESS_REVIEW_TYPE_COUNT
     };
 
+static const std::string& business_review_type_to_str(
+    const business_review_type& t){
+static const std::string empty_str;
+static const std::string bbb_str = "bbb";
+static const std::string consumer_affairs_str = "consumer_affairs";
+static const std::string google_str = "google";
+static const std::string trustlink_str = "trustlink";
+static const std::string trustpilot_str = "trustpilot";
+static const std::string yelp_str = "yelp";
+static const std::string yelp_not_recommended_str = "yelp_not_recommended";
+
+const std::string *result = &empty_str;
+switch(t){
+    case BUSINESS_REVIEW_TYPE_BBB:
+        result = &bbb_str;
+        break;
+    case BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS:
+        result = &consumer_affairs_str;
+        break;
+    case BUSINESS_REVIEW_TYPE_GOOGLE:
+        result = &google_str;
+        break;
+    case BUSINESS_REVIEW_TYPE_TRUSTLINK:
+        result = &trustlink_str;
+        break;
+    case BUSINESS_REVIEW_TYPE_TRUSTPILOT:
+        result = &trustpilot_str;
+        break;
+    case BUSINESS_REVIEW_TYPE_YELP:
+        result = &yelp_str;
+        break;
+    case BUSINESS_REVIEW_TYPE_YELP_NOT_RECOMMENDED:
+        result = &yelp_not_recommended_str;
+        break;
+    case BUSINESS_REVIEW_TYPE_COUNT:
+    default:
+        result = &empty_str;
+        break;
+    }
+return *result;
+}
+
 business_review_type parse_file_determine_review_type(
     const std::string& file_name ){
 struct str_type{ const char *m_str; business_review_type m_review_type; };
@@ -99,6 +141,7 @@ return result;
 
 
 struct business_review{
+    business_review_type        m_review_type;
     std::string                 m_full_name;
     std::vector<std::string>    m_parsed_name;
     std::string                 m_full_location_name;
@@ -508,7 +551,7 @@ const std::string year_str = date_str.substr(second_slash_pos + 1);
 const int year_int = atoi(year_str.c_str());
 const int month_int = atoi(month_str.c_str());
 const int day_int = atoi(day_str.c_str());
-const int hour_int = 0;
+const int hour_int = 12;
 const int minute_int = 0;
 const int second_int = 0;
 
@@ -698,6 +741,7 @@ while(ifs.good()){
         ( start_non_ws_pos == review_from_pos ) ){
         m_reviews.push_back(business_review());
         review = &(m_reviews.back());
+        review->m_review_type = BUSINESS_REVIEW_TYPE_BBB;
         review->m_full_name = line.substr(review_from_pos + strlen("Review from"));
         split_name(review->m_full_name, &(review->m_parsed_name) );
         parse_state = BBB_PARSE_STATE_SEARCHING_FOR_STARS;
@@ -858,6 +902,7 @@ while(ifs.good()){
     if( std::string::npos != name_open_pos ){
         m_reviews.push_back(business_review());
         review = &(m_reviews.back());
+        review->m_review_type = BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS;
         if( ( name_close_pos > name_open_pos ) &&
             ( std::string::npos != name_close_pos ) ){
             const size_t name_start_pos = name_open_pos + name_open_tag.length();
@@ -1194,6 +1239,7 @@ for(; raw_review_sb_list.end() != raw_itr; ++raw_itr){
     if( std::string::npos != name_end_token_pos ){
         m_reviews.push_back(business_review());
         review = &(m_reviews.back());
+        review->m_review_type = BUSINESS_REVIEW_TYPE_GOOGLE;
 
         /* reviewer name */
         if(std::string::npos != name_start_token_pos){
@@ -1513,6 +1559,7 @@ while(ifs.good()){
     if( std::string::npos != token_review_start_tag_pos ){
         m_reviews.push_back(business_review());
         review = &(m_reviews.back());
+        review->m_review_type = BUSINESS_REVIEW_TYPE_TRUSTLINK;
         parse_state = TRUSTLINK_PARSE_STATE_SEARCHING_FOR_RATING;
         }
     else if( std::string::npos != token_date_pre_open_tag_pos ){
@@ -1766,6 +1813,7 @@ while(ifs.good()){
         if( std::string::npos != name_open_pos ){
             m_reviews.push_back(business_review());
             review = &(m_reviews.back());
+            review->m_review_type = BUSINESS_REVIEW_TYPE_TRUSTPILOT;
             if( ( name_close_pos > name_open_pos ) &&
                 ( std::string::npos != name_close_pos ) ){
                 const size_t name_start_pos = name_open_pos + name_open_tag.length();
@@ -1903,6 +1951,7 @@ while(ifs.good()){
     if(str_a == prev_line){
         m_reviews.push_back(business_review());
         review = &(m_reviews.back());
+        review->m_review_type = BUSINESS_REVIEW_TYPE_YELP;
         review->m_full_name = line;
         split_name(review->m_full_name, &(review->m_parsed_name) );
         parse_state = YELP_RECOMENDED_PARSE_STATE_PARSING_LOCATION;
@@ -1919,13 +1968,13 @@ while(ifs.good()){
             case YELP_RECOMENDED_PARSE_STATE_SEARCHING_FOR_RATING:
                 {
                 static const std::string rating_token = "rating:";
-                static const std::string stars_token = "Stars";
+                static const std::string star_token = "Star";
                 const std::string::size_type rating_token_pos = line.find(rating_token);
                 if( std::string::npos != rating_token_pos ){
                     const std::string::size_type rating_start_pos =
                         rating_token_pos + rating_token.length();
                     const std::string::size_type stars_token_pos =
-                        line.find(stars_token, rating_start_pos);
+                        line.find(star_token, rating_start_pos);
                     if( ( rating_start_pos < stars_token_pos ) &&
                         ( std::string::npos != stars_token_pos ) ){
                         const std::string::size_type rating_len =
@@ -2145,10 +2194,6 @@ while(ifs.good()){
         max_line_length = line.length();
         }
 
-    if( line_count > 750 ){
-    int breakpoint = 0;
-    }
-
     static const std::string name_pre_open_tag = "<span class=\"user-display-name\"";
     static const std::string name_open_tag = "\">";
     static const std::string name_close_tag = "</span>";
@@ -2199,6 +2244,7 @@ while(ifs.good()){
     if(should_create_review){
         m_reviews.push_back(business_review());
         review = &(m_reviews.back());
+        review->m_review_type = BUSINESS_REVIEW_TYPE_YELP_NOT_RECOMMENDED;
         }
 
     switch(parse_state){
@@ -2305,7 +2351,6 @@ while(ifs.good()){
                 review->m_time_stamp_min = (review->m_time_stamp > time_err_seconds) ?
                     (review->m_time_stamp - time_err_seconds) : 0;
                 review->m_time_stamp_max = review->m_time_stamp + time_err_seconds;
-                struct tm *tms2 = localtime( &(review->m_time_stamp) );
                 parse_state = YELP_NRR_PARSE_STATE_SEARCHING_FOR_REVIEW_STR;
                 }
             }
@@ -2481,7 +2526,7 @@ for(; unfiltered_reviews.end() != r_itr; ++r_itr) {
 void business_review_analyzer::init_city_state_from_full_location_name(
     business_review *review){
 const std::string::size_type comma_pos =
-    (review->m_full_location_name).find(",");
+    (review->m_full_location_name).rfind(",");
 if( std::string::npos == comma_pos ){
     review->m_city = review->m_full_location_name;
     }
@@ -2962,23 +3007,29 @@ return err_cnt;
 }
 
 void business_review_analyzer::write_full_table(std::ostream *os) const{
+
+static const char *wkday_names[] = 
+    { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+
 if( nullptr != os ){
     static const std::string delim = "\t";
 
-    (*os) << "review_type" 
-        << delim << "index"
+    (*os) << "index" 
+        << delim << "review_type"
+        << delim << "time_stamp_s"
+        << delim << "time_stamp_s_minus"
+        << delim << "time_stamp_ss_plus"
         << delim << "date"
+        << delim << "weekday"
         << delim << "year"
         << delim << "month" 
         << delim << "day"
         << delim << "hour"
         << delim << "minute"
         << delim << "second"
-        << delim << "time_tol_seconds_minus"
-        << delim << "time_tol_seconds_plus"
-        << delim << "reviewer_first" 
-        << delim << "reviewer_middle"
-        << delim << "reviewer_last"
+        << delim << "reviewer_first_name" 
+        << delim << "reviewer_middle_name"
+        << delim << "reviewer_last_name"
         << delim << "rating"
         << delim << "city"
         << delim << "state" 
@@ -2988,13 +3039,18 @@ if( nullptr != os ){
     for( size_t i = 0; i < m_reviews.size(); ++i ){
         const business_review& r = m_reviews.at(i);
 
+        const std::string& review_type_str =
+            business_review_type_to_str(r.m_review_type);
+
+        int wday_int = 0;
         int year_int = 0;
         int month_int = 0;
         int day_int = 0;
-        int hour_int = 0;
+        int hour_int = 12;
         int minute_int = 0;
         int second_int = 0;
         if( r.m_time_stamp_tm.get() != nullptr ){
+            wday_int = r.m_time_stamp_tm->tm_wday;
             year_int = r.m_time_stamp_tm->tm_year + 1900;
             month_int = r.m_time_stamp_tm->tm_mon + 1;
             day_int = r.m_time_stamp_tm->tm_mday;
@@ -3006,6 +3062,8 @@ if( nullptr != os ){
         sprintf(date_buf, "%04i/%02i/%02i", year_int, month_int, day_int);
         const std::string date_str(date_buf);
 
+        const std::string weekday_str( wkday_names[wday_int % 7] );
+
         const size_t time_tol_seconds_minus =
             (r.m_time_stamp_min < r.m_time_stamp) ?
             r.m_time_stamp - r.m_time_stamp_min : 0;
@@ -3015,23 +3073,25 @@ if( nullptr != os ){
 
         static const std::string empty_str;        
         const std::string& reviewer_first_name = 
-            r.m_parsed_name.empty() ? r.m_parsed_name.front() : empty_str;
+            (!r.m_parsed_name.empty()) ? r.m_parsed_name.front() : empty_str;
         const std::string& reviewer_middle_name = 
             (r.m_parsed_name.size() > 1) ? r.m_parsed_name.at(1) : empty_str;
         const std::string& reviewer_last_name = 
             (r.m_parsed_name.size() > 2) ? r.m_parsed_name.at(2) : empty_str;
 
-        (*os) << "-" 
-            << delim << (i+1)
+        (*os) << (i+1)
+            << delim << review_type_str
+            << delim << r.m_time_stamp
+            << delim << time_tol_seconds_minus
+            << delim << time_tol_seconds_plus
             << delim << date_str
+            << delim << weekday_str
             << delim << year_int
             << delim << month_int
             << delim << day_int
             << delim << hour_int
             << delim << minute_int
             << delim << second_int
-            << delim << time_tol_seconds_minus
-            << delim << time_tol_seconds_plus
             << delim << reviewer_first_name
             << delim << reviewer_middle_name
             << delim << reviewer_last_name
@@ -3055,7 +3115,11 @@ return err_cnt;
 
 
 
-
+/*
+command line:
+  business_review_analyzer.exe --end-date 2024-04-20 file1.txt file2.htm file3.txt 
+* 
+*/
 int main( int argc, char *argv[] )
 {
 int err_cnt = 0;
@@ -3063,6 +3127,10 @@ std::string file_name;
 if( argc > 1 ){
     file_name = argv[1];
     err_cnt += business_review_analyzer::do_analysis( file_name );
+
+
+
+
     }
 
 return err_cnt;
