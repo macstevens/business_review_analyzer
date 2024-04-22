@@ -162,15 +162,22 @@ typedef business_review_vec::iterator business_review_vec_itr;
 
 class business_review_analyzer{
 public:
-    static int do_analysis( const std::string& file_name );
+    struct input_params{
+        std::string m_file_name;
+        time_t m_start_time_stamp;
+        time_t m_end_time_stamp;
+        };
+public:
+    static int run_main( int argc, char *argv[] );
+    static int do_analysis( const input_params& p );
     static void trim_str( std::string *s);
     static void make_lower_str( std::string *s);
     static void split_str( const std::string& s, std::vector<std::string> *v);
     static void split_name( const std::string& s, std::vector<std::string> *v);
-    std::shared_ptr<tm> parse_date_mon_day_year( const std::string& date_str );
-    std::shared_ptr<tm> parse_date_ymd_dash( const std::string& date_str );
-    std::shared_ptr<tm> parse_date_mdy_slash( const std::string& date_str );
-    std::shared_ptr<tm> parse_date_t_time( const std::string& date_str );
+    static std::shared_ptr<tm> parse_date_mon_day_year( const std::string& date_str );
+    static std::shared_ptr<tm> parse_date_ymd_dash( const std::string& date_str );
+    static std::shared_ptr<tm> parse_date_mdy_slash( const std::string& date_str );
+    static std::shared_ptr<tm> parse_date_t_time( const std::string& date_str );
 private:
     enum bbb_parse_state{
         BBB_PARSE_STATE_SEARCHING_FOR_REVIEW,
@@ -255,7 +262,8 @@ private:
 private:
     /* input */
     std::string m_file_name;
-
+    time_t m_start_time_stamp;
+    time_t m_end_time_stamp;
 
     /* working data */
     business_review_type m_business_review_type;
@@ -277,6 +285,8 @@ public:
     business_review_analyzer(){}
    ~business_review_analyzer(){}
     void set_file_name(const std::string& file_name){ m_file_name = file_name; }
+    void set_start_time_stamp(const time_t& start_time_stamp){ m_start_time_stamp = start_time_stamp; }
+    void set_end_time_stamp(const time_t& end_time_stamp){ m_end_time_stamp = end_time_stamp; }
     int execute();
 private:
     int reset_working_data();
@@ -291,6 +301,7 @@ private:
     void sort_reviews_by_timestamp();
     void remove_reviews_violating_yelp_terms_of_service();
     void remove_invalid_reviews();
+    void remove_invalid_reviews_outside_time_range();
     void init_city_state_from_full_location_name(business_review *review);
     int init_review_str_count_map();
     int init_review_count_str_vec();
@@ -309,11 +320,80 @@ private:
     int write_full_table();
 };
 
-int business_review_analyzer::do_analysis( const std::string& file_name ){
-std::cout << "Analyze Business Reviews   file:" << file_name << "\n";
+
+
+int business_review_analyzer::run_main( int argc, char *argv[] )
+{
+static const std::string start_date_tag = "--start-date-time";
+static const std::string end_date_tag = "--end-date-time";
+int err_cnt = 0;
+std::string token;
+if( argc > 1 ){
+    time_t start_time_stamp = 0;
+    time_t end_time_stamp = time(nullptr);
+    std::vector<std::string> file_names;
+    int arg_idx = 1;
+    while( arg_idx < argc ){
+        token.assign(argv[arg_idx]);
+        const bool is_start_date_tag = ( token == start_date_tag );
+        const bool is_end_date_tag = ( token == end_date_tag );
+        if( is_start_date_tag || is_end_date_tag ){
+            ++arg_idx;
+            if( arg_idx < argc ){
+                token.assign(argv[arg_idx]);
+                std::shared_ptr<tm> tm_ptr = parse_date_t_time(token);
+                if( (nullptr != tm_ptr.get()) && (tm_ptr->tm_year > 0) ){
+                    const time_t t = mktime(tm_ptr.get());
+                    if( is_start_date_tag ){
+                        start_time_stamp = t;
+                        }
+                    else{
+                        end_time_stamp = t;
+                        }
+                    }
+                ++arg_idx;
+                }
+            }
+        else{
+            file_names.push_back(token);
+            ++arg_idx;
+            }
+        }
+
+    business_review_analyzer::input_params p;
+    p.m_start_time_stamp = start_time_stamp;
+    p.m_end_time_stamp = end_time_stamp;
+    std::vector<std::string>::const_iterator file_name_itr = file_names.begin();
+    for( ; file_names.end() != file_name_itr; ++file_name_itr ){
+        const std::string& file_name = *file_name_itr;
+        p.m_file_name = file_name;
+        err_cnt += do_analysis( p );
+        }
+    }
+return err_cnt;
+}
+
+
+int business_review_analyzer::do_analysis( const input_params& p ){
+
+struct tm *start_tm = localtime( &(p.m_start_time_stamp) );
+char start_time_buf[64];
+strftime(start_time_buf, 64, "%FT%T", start_tm);
+
+struct tm *end_tm = localtime( &(p.m_end_time_stamp) );
+char end_time_buf[64];
+strftime(end_time_buf, 64, "%FT%T", start_tm);
+
+std::cout << "Analyze Business Reviews"
+    << "   file:" << p.m_file_name 
+    << "   start_time:" << start_time_buf 
+    << "   end_time:" << end_time_buf 
+    << "\n";
 int err_cnt = 0;
 business_review_analyzer a;
-a.set_file_name(file_name);
+a.set_file_name(p.m_file_name);
+a.set_start_time_stamp(p.m_start_time_stamp);
+a.set_end_time_stamp(p.m_end_time_stamp);
 err_cnt += a.execute();
 return err_cnt;
 }
@@ -383,7 +463,8 @@ void business_review_analyzer::split_name( const std::string& s,
 std::string name = s;
 std::string::iterator name_char_itr = name.begin();
 for(; name.end() != name_char_itr; ++name_char_itr){
-    if( !isalpha( *name_char_itr ) ){
+    const char& name_char = *name_char_itr;
+    if ((name_char < 0) || (name_char >= 127) || !isalpha(name_char)) {
         *name_char_itr = ' ';
         }
     }
@@ -609,7 +690,8 @@ const std::string month_str =
     (std::string::npos == second_dash_pos ) ? empty_str:
     date_str.substr(first_dash_pos + 1,(second_dash_pos - first_dash_pos)-1);
 const std::string day_str =  
-    (std::string::npos == capital_t_pos ) ? empty_str:
+    (std::string::npos == capital_t_pos ) ? 
+    ((std::string::npos == second_dash_pos ) ? empty_str : date_str.substr(second_dash_pos + 1)) :
     date_str.substr(second_dash_pos + 1,(capital_t_pos - second_dash_pos)-1);
 const std::string hour_str =  
     (std::string::npos == first_colon_pos ) ? empty_str:
@@ -618,7 +700,8 @@ const std::string minute_str =
     (std::string::npos == second_colon_pos ) ? empty_str:
     date_str.substr(first_colon_pos + 1,(second_colon_pos - first_colon_pos)-1);
 const std::string second_str =  
-    (std::string::npos == period_pos ) ? empty_str:
+    (std::string::npos == period_pos ) ? 
+    ((std::string::npos == second_colon_pos ) ? empty_str : date_str.substr(second_colon_pos + 1)) :
     date_str.substr(second_colon_pos + 1,(period_pos - second_colon_pos)-1);
 const std::string millisecond_str =  
     (std::string::npos == z_pos ) ? empty_str:
@@ -684,6 +767,11 @@ switch(m_business_review_type){
     default:
         break;
     }
+
+remove_invalid_reviews_outside_time_range();
+
+std::cout << "(within time range) review_count=" << m_reviews.size() << "\n";
+
 
 err_cnt += init_review_str_count_map();
 err_cnt += init_review_count_str_vec();
@@ -798,8 +886,11 @@ while(ifs.good()){
             break;
         }
     }
-std::cout << "review_count=" << m_reviews.size() << "\n";
+std::cout << "total review_count=" << m_reviews.size() << "\n";
 std::cout << "line_count=" << line_count << "\n";
+
+sort_reviews_by_timestamp();
+
 return err_cnt;
 }
 
@@ -826,8 +917,7 @@ dealing with GoldCo and our investment with them. We are even using
 GoldCo with more investment of purchasing precious metals with our 
 savings. Thank you to Robert and GoldCo for making the process smooth 
 &amp; easy.</p></div></div>
-**/
-
+*/
 int business_review_analyzer::read_review_file_consumer_affairs(){
 int err_cnt = 0;
 
@@ -990,8 +1080,10 @@ while(ifs.good()){
             break;
         }
     }
-std::cout << "review_count=" << m_reviews.size() << "\n";
+std::cout << "total review_count=" << m_reviews.size() << "\n";
 std::cout << "line_count=" << line_count << "\n";
+
+sort_reviews_by_timestamp();
 
 return err_cnt;
 }
@@ -1056,8 +1148,6 @@ out to us!</div></div></div>
 <div class="wSokxc" role="img" style="background-image: url(&quot;https://lh3.googleusercontent.com/a/ACg8ocKzXpwlNadvN9Tv3eGLNwibrGaCZVVEfNgl3F3GrKcYVYx4ow=s64-c-rp-mo-br100&quot;);" aria-label="Gail Breckenridge"><div class="ANWksb"></div></div>
 
 <div><div class="Vpc5Fe">Gail Breckenridge</div>
-
-
 */
 int business_review_analyzer::read_review_file_google(){
 int err_cnt = 0;
@@ -1332,6 +1422,7 @@ for(; raw_review_sb_list.end() != raw_itr; ++raw_itr){
 
 err_cnt += attempt_equalize_timestamp_intervals();
 
+sort_reviews_by_timestamp();
 
 /* finalize timestamps */
 business_review_vec_itr bbbrv_itr = m_reviews.begin();
@@ -1342,6 +1433,9 @@ for(; m_reviews.end() != bbbrv_itr; ++bbbrv_itr){
     review->m_time_stamp_tm.reset( new struct tm);
     memcpy( review->m_time_stamp_tm.get(), tms2, sizeof(tm));
     }
+
+std::cout << "total review_count=" << m_reviews.size() << "\n";
+std::cout << "line_count=" << line_count << "\n";
 
 return err_cnt;
 }
@@ -1719,7 +1813,10 @@ while(ifs.good()){
 
     }
 
+sort_reviews_by_timestamp();
 
+std::cout << "total review_count=" << m_reviews.size() << "\n";
+std::cout << "line_count=" << line_count << "\n";
 
 return err_cnt;
 }
@@ -1866,13 +1963,11 @@ while(ifs.good()){
             }
         }
     }
-std::cout << "review_count=" << m_reviews.size() << "\n";
+std::cout << "total review_count=" << m_reviews.size() << "\n";
 std::cout << "line_count=" << line_count << "\n";
 std::cout << "max_line_length=" << max_line_length << "\n";
 
-
-
-
+sort_reviews_by_timestamp();
 
 return err_cnt;
 }
@@ -2024,6 +2119,9 @@ while(ifs.good()){
 
 remove_invalid_reviews();
 sort_reviews_by_timestamp();
+
+std::cout << "total review_count=" << m_reviews.size() << "\n";
+std::cout << "line_count=" << line_count << "\n";
 
 return err_cnt;
 }
@@ -2406,6 +2504,9 @@ remove_reviews_violating_yelp_terms_of_service();
 
 sort_reviews_by_timestamp();
 
+std::cout << "total review_count=" << m_reviews.size() << "\n";
+std::cout << "line_count=" << line_count << "\n";
+
 return err_cnt;
 }
 
@@ -2523,6 +2624,26 @@ for(; unfiltered_reviews.end() != r_itr; ++r_itr) {
 }
 
 
+void business_review_analyzer::remove_invalid_reviews_outside_time_range(){
+
+business_review_vec unfiltered_reviews;
+std::swap(unfiltered_reviews, m_reviews);
+assert(m_reviews.empty());
+business_review_vec_citr r_itr = unfiltered_reviews.begin();
+for(; unfiltered_reviews.end() != r_itr; ++r_itr) { 
+    const business_review& r = *r_itr;
+    if ( (r.m_time_stamp < m_start_time_stamp ) || 
+         (r.m_time_stamp > m_end_time_stamp ) ){
+        int breakpoint = 0;
+        }
+    else{
+        m_reviews.push_back(r);
+        }
+    }
+
+}
+
+
 void business_review_analyzer::init_city_state_from_full_location_name(
     business_review *review){
 const std::string::size_type comma_pos =
@@ -2576,11 +2697,11 @@ for(; m_review_str_count_map.end() != map_itr; ++map_itr ){
     }
 std::sort(m_review_count_str_vec.begin(), m_review_count_str_vec.end());
 
-std::cout << "review string, review count\n";
-for( size_t i = 0; i < 100 && i < m_review_count_str_vec.size(); ++i ){
-    const szt_str_pair& xx = m_review_count_str_vec.at(m_review_count_str_vec.size() - i -1);
-    std::cout << xx.second << "," << xx.first << "\n";
-    }
+//std::cout << "review string, review count\n";
+//for( size_t i = 0; i < 100 && i < m_review_count_str_vec.size(); ++i ){
+//    const szt_str_pair& xx = m_review_count_str_vec.at(m_review_count_str_vec.size() - i -1);
+//    std::cout << xx.second << "," << xx.first << "\n";
+//    }
 return err_cnt;
 }
 
@@ -2627,17 +2748,18 @@ for(; bbbrv_itr != m_reviews.end(); ++bbbrv_itr){
 std::string out_file_name = m_file_name + ".citypop.csv";
 std::ofstream ofs(out_file_name);
 
+
 ofs << "bin,small city,state,population,large city,state,population,review tally\n";
 
 for( size_t j = 0; j < cb.get_bin_count(); ++j ){
     const city_bin& b = cb.get_bin(j);
-    std::cout << "city_bin[" << j << "]"
-        << "  small city=" << b.m_small_city.m_city << "," << b.m_small_city.m_state
-        << "(" << b.m_small_city_population << ") "
-        << "  large city=" << b.m_large_city.m_city << "," << b.m_large_city.m_state
-        << "(" << b.m_large_city_population << ") "
-        << "  review tally=" << b.m_tally 
-        << "\n";
+    //std::cout << "city_bin[" << j << "]"
+    //    << "  small city=" << b.m_small_city.m_city << "," << b.m_small_city.m_state
+    //    << "(" << b.m_small_city_population << ") "
+    //    << "  large city=" << b.m_large_city.m_city << "," << b.m_large_city.m_state
+    //    << "(" << b.m_large_city_population << ") "
+    //    << "  review tally=" << b.m_tally 
+    //    << "\n";
     ofs << j << ","
       << b.m_small_city.m_city << "," 
       << b.m_small_city.m_state << ","  
@@ -2647,6 +2769,7 @@ for( size_t j = 0; j < cb.get_bin_count(); ++j ){
       << b.m_large_city_population << ","
        << b.m_tally << "\n"; 
     }
+
 
 
 std::string cityunk_file_name = m_file_name + ".cityunk.csv";
@@ -2851,10 +2974,13 @@ if( nullptr != os ){
             }
         }
 
-    /* expand to include present time */
-    time_t now = time(nullptr);
-    if( now > time_stamp_max ){
-        time_stamp_max = now;
+    /* constrain by input parameters */
+    if( m_start_time_stamp > 0 ){
+        time_stamp_min = m_start_time_stamp;
+        }
+
+    if( m_end_time_stamp > time_stamp_min ){
+        time_stamp_max = m_end_time_stamp;
         }
 
     /* */
@@ -3117,21 +3243,11 @@ return err_cnt;
 
 /*
 command line:
-  business_review_analyzer.exe --end-date 2024-04-20 file1.txt file2.htm file3.txt 
-* 
+  business_review_analyzer.exe --start-date-time 2012-01-01T12:00:00 --end-date-time 2024-04-20T12:00:00 file1.txt file2.htm file3.txt 
 */
 int main( int argc, char *argv[] )
 {
-int err_cnt = 0;
-std::string file_name;
-if( argc > 1 ){
-    file_name = argv[1];
-    err_cnt += business_review_analyzer::do_analysis( file_name );
-
-
-
-
-    }
-
-return err_cnt;
+int result = business_review_analyzer::run_main(argc, argv);
+return result;
 }
+
