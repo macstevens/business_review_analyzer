@@ -1,0 +1,31 @@
+https://www.yelp.com/biz/goldco-calabasas
+https://www.yelp.com/biz/goldco-calabasas?start=10
+
+Copyright Fair Use Notice
+Copyrighted materials are included herein for the purpose of comment, criticism, and news reporting.  
+Such use is explicitly permitted under U.S. Code Title 17, Chapter 1, Section 107 .
+https://www.govinfo.gov/app/details/USCODE-2022-title17/USCODE-2022-title17-chap1-sec107
+
+Yelp (Recommended) Download Instructions
+ 1. Open text editor.
+ 2. Run Firefox browser
+ 3. Open web page https://www.yelp.com/biz/goldco-calabasas
+ 4. Press ctrl-A to select all text on web page.
+ 5. Press ctrl-C to copy.
+ 6. Open text editor.
+ 7. Press ctrl-V in text editor to paste text. 
+ 8. At bottom of web page, press [>] button to load next page https://www.yelp.com/biz/goldco-calabasas?start=10
+ 9. Repeat steps 4-8 until all reviews are loaded into text editor.
+ 10. Manually add rating for each review by inserting a line before the date.  For example:
+    Photo of Conni D.
+    Conni D.
+    Sun City, AZ
+    0
+    3
+    5 Stars
+    Nov 11, 2022
+
+    I was pleased with the level of service and received answers to all my questions. I couldn't be happier with my advisor, Ben M, who made a complicated process as easy to complete as possible.
+ 11. Save file from text editor.
+ 
+
