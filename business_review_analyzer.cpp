@@ -16,6 +16,105 @@
 
 #pragma warning(disable:4996)
 
+/*
+* TODO: instructions
+*       test case
+*       city count file
+*       word count file
+*       add numeric category to word count file
+* 
+* BBB Instructions
+ 1. Run Firefox browser
+ 2. Open web page  https://www.bbb.org/us/ca/calabasas/profile/gold-buyers/goldco-direct-llc-1216-100109958/customer-reviews
+ 3. Scroll to bottom of web page.  Press [Load More] button.
+ 4. Repeat pressing [Load More] button until all reviews are loaded.
+ 5. Press ctrl-A to select all text on web page.
+ 6. Press ctrl-C to copy.
+ 7. Open text editor.
+ 8. Press ctrl-V in text editor to paste text.
+ 9. Save file from text editor. 
+* 
+* 
+* Consumer Affairs Instructions
+ 1. Run Firefox browser
+ 2. Open web page https://www.consumeraffairs.com/finance/goldco-precious-metals.html
+ 3. Save file as html:  Right-click -> Save Page As...  consumer_affairs_goldco_01.htm
+ 4. Scroll to bottom of web page.  Press [>] button
+ 5. The following web page should now be open. https://www.consumeraffairs.com/finance/goldco-precious-metals.html?page=2#scroll_to_reviews=true
+ 6. Repeat steps 2-5 until all reviews are downloaded.
+ 7. In text editor, concatenate all resulting .htm files into a single file.
+* 
+* 
+Google Instructions
+ 1. Run Firefox browser
+ 2. Open web page https://www.google.com/search?client=firefox-b-1-d&q=goldco+google+reviews
+ 3. On right side of page, click on link "2,416 Google reviews" ( https://www.google.com/search?client=firefox-b-1-d&q=goldco+google+reviews# )
+ 4. Smaller pop-up page appears.  This page contains the reviews.  
+ 5. Scroll to bottom of pop-up review page.  This causes more reviews to load.
+ 6. Repeat process of scrolling to bottom until all reviews load.
+ 7. Save file as html:  Right-click -> Save Page As...  google_goldco.htm
+ 8. Open resulting .htm file in text editor.
+ 9 Add line stating download time in GMT (zulu time) at top of file. For example:
+  <reference_time>2024-04-03T20:00:00.000Z</reference_time>  <! download time = 2024/04/03 12:00 Pacific >
+ 10. Save file from text editor
+* 
+* 
+TrustLink Instructions
+ 1. Run Firefox browser
+ 2. Open web page https://www.trustlink.org/Reviews/Goldco-206527051
+ 3. Save file as html:  Right-click -> Save Page As...  trustlink_goldco_01.htm
+ 4. At bottom of page, find page number links "1 2 3 4 5 ..." . Click on "2" to load next page of reviews.
+ 5. Repeat steps 3-4 until all reviews are downloaded.
+ 6. In text editor, concatenate all resulting .htm files into a single file.
+* 
+* 
+TrustPilot Instructions
+ 1. Run Firefox browser
+ 2. Open web page https://www.trustpilot.com/review/goldco.com
+ 3. Save file as html:  Right-click -> Save Page As...  trustpilot_goldco_01.htm
+ 4. At bottom of page, press [Next Page] button to load https://www.trustpilot.com/review/goldco.com?page=2
+ 5. Repeat steps 3-4 until all reviews are downloaded.
+ 6. In text editor, concatenate all resulting .htm files into a single file.
+*
+* 
+Yelp (Recommended) Instructions
+ 1. Open text editor.
+ 2. Run Firefox browser
+ 3. Open web page https://www.yelp.com/biz/goldco-calabasas
+ 4. Press ctrl-A to select all text on web page.
+ 5. Press ctrl-C to copy.
+ 6. Open text editor.
+ 7. Press ctrl-V in text editor to paste text. 
+ 8. At bottom of web page, press [>] button to load next page https://www.yelp.com/biz/goldco-calabasas?start=10
+ 9. Repeat steps 4-8 until all reviews are loaded into text editor.
+ 10. Manually add rating for each review by inserting a line before the date.  For example:
+    Photo of Conni D.
+    Conni D.
+    Sun City, AZ
+    0
+    3
+    5 Stars
+    Nov 11, 2022
+
+    I was pleased with the level of service and received answers to all my questions. I couldn't be happier with my advisor, Ben M, who made a complicated process as easy to complete as possible.
+ 11. Save file from text editor.
+*
+* 
+Yelp (Not Recommended) Instructions
+ 1. Run Firefox browser
+ 2. Open web page https://www.yelp.com/biz/goldco-calabasas
+ 3. At bottom of page, click on link "191 other reviews that are not currently recommended" to here:
+        https://www.yelp.com/not_recommended_reviews/goldco-calabasas?not_recommended_start=0
+ 4. Save file as html:  Right-click -> Save Page As...  yelp_not_recommended_goldco_01.htm
+ 5. At bottom of page, press [Next] button to load https://www.yelp.com/not_recommended_reviews/goldco-calabasas?not_recommended_start=10
+ 6. Repeat steps 3-4 until all reviews are downloaded.
+ 7. In text editor, concatenate all resulting .htm files into a single file.
+* 
+* 
+Yellow Pages Instructions
+ https://www.yellowpages.com/woodland-hills-ca/mip/goldco-precious-metals-505154425
+* 
+* */
 
 enum business_review_type{
     BUSINESS_REVIEW_TYPE_BBB,
@@ -306,8 +405,8 @@ private:
     int init_review_str_count_map();
     int init_review_count_str_vec();
     int init_star_tv_map();
-    int init_city_bins();
-    int init_first_letter_tallies();
+    int write_city_bins();
+    int write_first_letter_tallies();
     size_t get_review_count_in_period( const int& star_count,
         const time_t& period_start, const time_t& period_end ) const;
     void write_review_count_table(std::ostream *os) const;
@@ -316,8 +415,15 @@ private:
     int write_weekday_summary_table();
     void write_weekhour_summary_table(std::ostream *os) const;
     int write_weekhour_summary_table();
+    void write_word_counts(std::ostream *os) const;
+    int write_word_counts();
+    void write_std_word_counts(std::ostream *os) const;
+    int write_std_word_counts();
     void write_full_table(std::ostream *os) const;
     int write_full_table();
+
+
+
 };
 
 
@@ -776,11 +882,13 @@ std::cout << "(within time range) review_count=" << m_reviews.size() << "\n";
 err_cnt += init_review_str_count_map();
 err_cnt += init_review_count_str_vec();
 err_cnt += init_star_tv_map();
-err_cnt += init_city_bins();
-err_cnt += init_first_letter_tallies();
+err_cnt += write_city_bins();
+err_cnt += write_first_letter_tallies();
 err_cnt += write_review_count_table();
 err_cnt += write_weekday_summary_table();
 err_cnt += write_weekhour_summary_table();
+err_cnt += write_word_counts();
+err_cnt += write_std_word_counts();
 err_cnt += write_full_table();
 
 return err_cnt;
@@ -2729,7 +2837,7 @@ return err_cnt;
 }
 
 
-int business_review_analyzer::init_city_bins(){
+int business_review_analyzer::write_city_bins(){
 int err_cnt = 0;
 
 city_bins cb;
@@ -2789,7 +2897,7 @@ https://math.answers.com/statistics/What_is_the_percent_distribution_of_first_le
 
 http://answers.google.com/answers/threadview/id/347668.html
 */
-int business_review_analyzer::init_first_letter_tallies(){
+int business_review_analyzer::write_first_letter_tallies(){
 int err_cnt = 0;
 
 static const double first_name_expected_ratio[] = {
@@ -3131,6 +3239,42 @@ std::ofstream ofs(out_file_name);
 write_weekhour_summary_table(&ofs);
 return err_cnt;
 }
+
+
+
+void business_review_analyzer::write_word_counts(std::ostream *os) const{
+
+if( nullptr != os ){
+
+    /* header */
+    (*os) << "word,count\n";
+    for( size_t i = 0; i < m_review_count_str_vec.size(); ++i ){
+        const szt_str_pair& xx = m_review_count_str_vec.at(m_review_count_str_vec.size() - i -1);
+        (*os) << xx.second << "," << xx.first << "\n";
+        }
+    }
+}
+
+int business_review_analyzer::write_word_counts(){
+int err_cnt = 0;
+std::string out_file_name = m_file_name + ".word.csv";
+std::ofstream ofs(out_file_name);
+write_word_counts(&ofs);
+return err_cnt;
+}
+
+void business_review_analyzer::write_std_word_counts(std::ostream *os) const{
+
+}
+
+int business_review_analyzer::write_std_word_counts(){
+int err_cnt = 0;
+std::string out_file_name = m_file_name + ".stdword.csv";
+std::ofstream ofs(out_file_name);
+write_std_word_counts(&ofs);
+return err_cnt;
+}
+
 
 void business_review_analyzer::write_full_table(std::ostream *os) const{
 
