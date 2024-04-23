@@ -1,0 +1,16 @@
+#ignore these files
+*.a
+*.exe
+*.o
+*.vcxproj.filters
+*.vcxproj.user
+*.vpwhist
+*.vtg
+/msvc/.vs
+/msvc/business_review_analyzer/.vs
+/msvc/business_review_analyzer/x64/
+/msvc/business_review_analyzer_test/x64/
+/msvc/x64/
+/gcc/Debug/
+/gcc/Profile/
+/gcc/Release/
