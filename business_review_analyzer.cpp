@@ -89,10 +89,10 @@ static const str_type indicator_str_types[] = {
     { "Verified purchase",              BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS }, 
     { "Consumers Unified, LLC",         BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS }, 
     { "CONSUMERS UNIFIED, LLC",         BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS }, 
-    { "ConsumerAffairs",                BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS }, 
+    { "ConsumerAffairs",                BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS },  
+    { "consumer_affairs",               BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS }, 
 
-    { "google.com",                     BUSINESS_REVIEW_TYPE_GOOGLE },
-    { "</div></div></div>",             BUSINESS_REVIEW_TYPE_GOOGLE }, 
+    { "google.",                        BUSINESS_REVIEW_TYPE_GOOGLE },
 
     { "TrustLink",                      BUSINESS_REVIEW_TYPE_TRUSTLINK }, 
     { "www.trustlink.org",              BUSINESS_REVIEW_TYPE_TRUSTLINK }, 
@@ -563,6 +563,8 @@ int err_cnt = 0;
 err_cnt += reset_working_data();
 
 m_business_review_type = parse_file_determine_review_type( m_file_name );
+std::cout << "file type: "
+    << business_review_type_to_str(m_business_review_type) << "\n";
 switch(m_business_review_type){
     case BUSINESS_REVIEW_TYPE_BBB:
         err_cnt += read_review_file_bbb();

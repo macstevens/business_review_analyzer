@@ -21,13 +21,11 @@
 #pragma warning(disable:4996)
 
 /*
-* TODO: instructions
-*       test case
-*       city count file
-*       word count file
+* TODO: word count file
 *       add numeric category to word count file
+*       merge results from various sources
 * 
-* BBB Instructions
+BBB Download Instructions
  1. Run Firefox browser
  2. Open web page  https://www.bbb.org/us/ca/calabasas/profile/gold-buyers/goldco-direct-llc-1216-100109958/customer-reviews
  3. Scroll to bottom of web page.  Press [Load More] button.
@@ -39,7 +37,7 @@
  9. Save file from text editor. 
 * 
 * 
-* Consumer Affairs Instructions
+Consumer Affairs Download Instructions
  1. Run Firefox browser
  2. Open web page https://www.consumeraffairs.com/finance/goldco-precious-metals.html
  3. Save file as html:  Right-click -> Save Page As...  consumer_affairs_goldco_01.htm
@@ -49,7 +47,7 @@
  7. In text editor, concatenate all resulting .htm files into a single file.
 * 
 * 
-Google Instructions
+Google Download Instructions
  1. Run Firefox browser
  2. Open web page https://www.google.com/search?client=firefox-b-1-d&q=goldco+google+reviews
  3. On right side of page, click on link "2,416 Google reviews" ( https://www.google.com/search?client=firefox-b-1-d&q=goldco+google+reviews# )
@@ -63,7 +61,7 @@ Google Instructions
  10. Save file from text editor
 * 
 * 
-TrustLink Instructions
+TrustLink Download Instructions
  1. Run Firefox browser
  2. Open web page https://www.trustlink.org/Reviews/Goldco-206527051
  3. Save file as html:  Right-click -> Save Page As...  trustlink_goldco_01.htm
@@ -72,7 +70,7 @@ TrustLink Instructions
  6. In text editor, concatenate all resulting .htm files into a single file.
 * 
 * 
-TrustPilot Instructions
+TrustPilot Download Instructions
  1. Run Firefox browser
  2. Open web page https://www.trustpilot.com/review/goldco.com
  3. Save file as html:  Right-click -> Save Page As...  trustpilot_goldco_01.htm
@@ -81,7 +79,7 @@ TrustPilot Instructions
  6. In text editor, concatenate all resulting .htm files into a single file.
 *
 * 
-Yelp (Recommended) Instructions
+Yelp (Recommended) Download Instructions
  1. Open text editor.
  2. Run Firefox browser
  3. Open web page https://www.yelp.com/biz/goldco-calabasas
@@ -104,7 +102,7 @@ Yelp (Recommended) Instructions
  11. Save file from text editor.
 *
 * 
-Yelp (Not Recommended) Instructions
+Yelp (Not Recommended) Download Instructions
  1. Run Firefox browser
  2. Open web page https://www.yelp.com/biz/goldco-calabasas
  3. At bottom of page, click on link "191 other reviews that are not currently recommended" to here:
