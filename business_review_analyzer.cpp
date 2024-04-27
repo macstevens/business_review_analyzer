@@ -2371,7 +2371,7 @@ int err_cnt = 0;
 
 if( m_reviews.size() > 2 ){
     static const size_t iteration_limit = 100000;
-    static const time_t threshold_delta_time_seconds = 300;
+    static const time_t threshold_delta_time_seconds = 2;
 
     size_t iteration = 0;
     time_t max_delta_time_seconds = threshold_delta_time_seconds * 2;
@@ -2408,6 +2408,7 @@ if( m_reviews.size() > 2 ){
         ++iteration;
         }
 
+    int breakpoint = 0;
     }
 
 return err_cnt;
