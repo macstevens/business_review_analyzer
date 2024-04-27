@@ -248,6 +248,24 @@ if(nullptr != s){
     }
 }
 
+void business_review_analyzer::convert_whitespace_to_space( std::string *s){
+if( nullptr != s ){
+    static const std::string special_whitespace = "\t\f\v\r\n";
+    static const std::string replacement_str = "    ";
+    std::string input_str;
+    std::swap(*s, input_str);
+    std::string::const_iterator ch_itr = input_str.begin();
+    for(; input_str.end() != ch_itr; ++ch_itr){
+        const char& ch = *ch_itr;
+        if( special_whitespace.find(ch) == std::string::npos ){
+            s->append(1,ch);
+            }
+        else{
+            s->append(replacement_str);
+            }
+        }
+    }
+}
 
 void business_review_analyzer::split_str( const std::string& s,
     std::vector<std::string> *v){
@@ -707,6 +725,7 @@ while(ifs.good()){
                     (review->m_review_str).append("\t");
                     }
                 (review->m_review_str).append(line);
+                convert_whitespace_to_space(&(review->m_review_str));
                 }
             break;
         case BBB_PARSE_STATE_DONE:
@@ -885,6 +904,7 @@ while(ifs.good()){
                 else{
                     review->m_review_str = line.substr(review_start_pos);
                     }
+                convert_whitespace_to_space(&(review->m_review_str));
                 parse_state = CONSUMER_AFFAIRS_PARSE_STATE_PARSING_REVIEW_STR;
                 }
             break;
@@ -900,7 +920,8 @@ while(ifs.good()){
                     }
                 else{
                     (review->m_review_str).append(line);
-                    }                
+                    }
+                convert_whitespace_to_space(&(review->m_review_str));               
                 }
             break;
         case CONSUMER_AFFAIRS_PARSE_STATE_DONE:
@@ -981,7 +1002,7 @@ int err_cnt = 0;
 
 
 static const std::string tag_google_user_content =
-    "https://lh3.googleusercontent.com/a/";
+    "https://lh3.googleusercontent.com/";
 static const std::string tag_google_user_content_default_user =
     "https://lh3.googleusercontent.com/a/default-user=s32-cc&quot";
 
@@ -993,7 +1014,6 @@ str_bool_list raw_review_sb_list;
 size_t line_count = 0;
 std::ifstream ifs(m_file_name.c_str());
 
-consumer_affairs_parse_state parse_state = CONSUMER_AFFAIRS_PARSE_STATE_SEARCHING_FOR_REVIEW;
 business_review *review = nullptr;
 size_t max_line_length = 0;
 std::string first_line;
@@ -1240,6 +1260,7 @@ for(; raw_review_sb_list.end() != raw_itr; ++raw_itr){
             const std::string::size_type review_len = (review_start_pos < review_text_end_token_pos) ?
                 review_text_end_token_pos - review_start_pos : 0;
             review->m_review_str = raw_review_text.substr(review_start_pos, review_len);
+            convert_whitespace_to_space(&(review->m_review_str));
             }
 
         int breakpoint = 0;
@@ -1607,7 +1628,8 @@ while(ifs.good()){
                         }
 
                     trim_str(&review_first_line);
-                    review->m_review_str = review_first_line; 
+                    review->m_review_str = review_first_line;
+                    convert_whitespace_to_space(&(review->m_review_str)); 
                     }
                 else{
                     parse_state = TRUSTLINK_PARSE_STATE_PARSING_REVIEW_STR;
@@ -1630,7 +1652,8 @@ while(ifs.good()){
             if(!review_line.empty()){
                 review->m_review_str.append( " " );
                 }
-            review->m_review_str.append(review_line); 
+            review->m_review_str.append(review_line);
+            convert_whitespace_to_space(&(review->m_review_str)); 
             }
         break;
 
@@ -1775,6 +1798,7 @@ while(ifs.good()){
                     ( review_body_start_pos < review_body_close_pos ) ?
                     (review_body_close_pos - review_body_start_pos) : 0;
                 review->m_review_str = line.substr(review_body_start_pos, review_body_len);
+                convert_whitespace_to_space(&(review->m_review_str));
                 }
 
             if( ( rating_close_pos > rating_open_pos ) &&
@@ -1932,6 +1956,7 @@ while(ifs.good()){
                         (review->m_review_str).append(" ");
                         }
                     (review->m_review_str).append(line);
+                    convert_whitespace_to_space(&(review->m_review_str));
                     }
                 break;
 
@@ -2298,6 +2323,7 @@ while(ifs.good()){
                     }
                 trim_str(&review_str_line);
                 review->m_review_str = review_str_line;
+                convert_whitespace_to_space(&(review->m_review_str));
                 parse_state = YELP_NRR_PARSE_STATE_PARSING_REVIEW_STR;
                 }
             break;
@@ -2318,6 +2344,7 @@ while(ifs.good()){
                     review->m_review_str.append(" ");
                     review->m_review_str.append(review_str_line);
                     }
+                convert_whitespace_to_space(&(review->m_review_str));
                 }
             break;
 
@@ -2344,7 +2371,7 @@ int err_cnt = 0;
 
 if( m_reviews.size() > 2 ){
     static const size_t iteration_limit = 100000;
-    static const time_t threshold_delta_time_seconds = 15;
+    static const time_t threshold_delta_time_seconds = 300;
 
     size_t iteration = 0;
     time_t max_delta_time_seconds = threshold_delta_time_seconds * 2;

@@ -171,6 +171,7 @@ public:
     static int do_analysis( const input_params& p );
     static void trim_str( std::string *s);
     static void make_lower_str( std::string *s);
+    static void convert_whitespace_to_space( std::string *s);
     static void split_str( const std::string& s, std::vector<std::string> *v);
     static void split_name( const std::string& s, std::vector<std::string> *v);
     static std::shared_ptr<tm> parse_date_mon_day_year( const std::string& date_str );
