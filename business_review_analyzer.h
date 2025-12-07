@@ -52,13 +52,15 @@ Google Download Instructions
  2. Open web page https://www.google.com/search?client=firefox-b-1-d&q=goldco+google+reviews
  3. On right side of page, click on link "2,416 Google reviews" ( https://www.google.com/search?client=firefox-b-1-d&q=goldco+google+reviews# )
  4. Smaller pop-up page appears.  This page contains the reviews.  
- 5. Scroll to bottom of pop-up review page.  This causes more reviews to load.
- 6. Repeat process of scrolling to bottom until all reviews load.
- 7. Save file as html:  Right-click -> Save Page As...  google_goldco.htm
- 8. Open resulting .htm file in text editor.
- 9 Add line stating download time in GMT (zulu time) at top of file. For example:
-  <reference_time>2024-04-03T20:00:00.000Z</reference_time>  <! download time = 2024/04/03 12:00 Pacific >
- 10. Save file from text editor
+ 5. Press Sort By: [Newest]
+ 6. Scroll to bottom of pop-up review page.  This causes more reviews to load.
+ 7. Repeat process of scrolling to bottom until all reviews load.
+ 8. Click on each hyperlink "More..." so that each review is fully expanded.
+ 9. Save file as html:  Right-click -- Save Page As...  google_goldco.htm
+ 10. Open resulting .htm file in text editor.
+ 11. Add line stating download time in GMT (zulu time) at top of file. For example:
+  @lt@reference_time@gt@2024-04-03T20:00:00.000Z@lt@/reference_time@gt@  @lt@! download time = 2024/04/03 12:00 Pacific @gt@
+ 12. Save file from text editor
 * 
 * 
 TrustLink Download Instructions
