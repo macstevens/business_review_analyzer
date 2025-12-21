@@ -39,6 +39,7 @@ static const std::string empty_str;
 static const std::string bbb_str = "bbb";
 static const std::string consumer_affairs_str = "consumer_affairs";
 static const std::string google_str = "google";
+static const std::string retirement_living_str = "retirement_living";
 static const std::string trustlink_str = "trustlink";
 static const std::string trustpilot_str = "trustpilot";
 static const std::string yelp_str = "yelp";
@@ -54,6 +55,9 @@ switch(t){
         break;
     case BUSINESS_REVIEW_TYPE_GOOGLE:
         result = &google_str;
+        break;
+    case BUSINESS_REVIEW_TYPE_RETIREMENT_LIVING:
+        result = &retirement_living_str;
         break;
     case BUSINESS_REVIEW_TYPE_TRUSTLINK:
         result = &trustlink_str;
@@ -93,6 +97,9 @@ static const str_type indicator_str_types[] = {
     { "consumer_affairs",               BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS }, 
 
     { "google.",                        BUSINESS_REVIEW_TYPE_GOOGLE },
+
+    { "www.retirementliving.com",       BUSINESS_REVIEW_TYPE_RETIREMENT_LIVING },
+    { "Retirement Living",              BUSINESS_REVIEW_TYPE_RETIREMENT_LIVING },
 
     { "TrustLink",                      BUSINESS_REVIEW_TYPE_TRUSTLINK }, 
     { "www.trustlink.org",              BUSINESS_REVIEW_TYPE_TRUSTLINK }, 
@@ -592,6 +599,9 @@ switch(m_business_review_type){
         break;
     case BUSINESS_REVIEW_TYPE_GOOGLE:
         err_cnt += read_review_file_google();
+        break;
+    case BUSINESS_REVIEW_TYPE_RETIREMENT_LIVING:
+        err_cnt += read_review_file_retirement_living();
         break;
     case BUSINESS_REVIEW_TYPE_TRUSTLINK:
         err_cnt += read_review_file_trustlink();
@@ -1288,6 +1298,61 @@ std::cout << "line_count=" << line_count << "\n";
 return err_cnt;
 }
 
+/*
+  </div>
+                        <div class="bg-gray-100 box-shadow pb-05 pt-05" style="border-radius: 10px; overflow: hidden">
+                                <div class="flex mb-1 px-1" style="justify-content: space-between">
+                    <div>
+                        <span class='inline-stars' style='color: var(--col-orange)'><svg style='height: 1em' viewBox='0 0 344 61' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' style='fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;'>
+        <title>1 Star</title>
+        <g transform='matrix(1,0,0,1,-44.6396,-169)'>
+            <path d='M76.5,169L84.021,192.148L108.36,192.148L88.67,206.454L96.191,229.602L76.5,215.296L56.809,229.602L64.33,206.454L44.64,192.148L68.979,192.148L76.5,169ZM146.5,169L154.021,192.148L178.36,192.148L158.67,206.454L166.191,229.602L146.5,215.296L126.809,229.602L134.33,206.454L114.64,192.148L138.979,192.148L146.5,169ZM216.5,169L224.021,192.148L248.36,192.148L228.67,206.454L236.191,229.602L216.5,215.296L196.809,229.602L204.33,206.454L184.64,192.148L208.979,192.148L216.5,169ZM286.5,169L294.021,192.148L318.36,192.148L298.67,206.454L306.191,229.602L286.5,215.296L266.809,229.602L274.33,206.454L254.64,192.148L278.979,192.148L286.5,169ZM356.5,169L364.021,192.148L388.36,192.148L368.67,206.454L376.191,229.602L356.5,215.296L336.809,229.602L344.33,206.454L324.64,192.148L348.979,192.148L356.5,169Z' style='fill:#bac5d0;'/>
+            <clipPath id='_clip1'>
+                <path d='M76.5,169L84.021,192.148L108.36,192.148L88.67,206.454L96.191,229.602L76.5,215.296L56.809,229.602L64.33,206.454L44.64,192.148L68.979,192.148L76.5,169ZM146.5,169L154.021,192.148L178.36,192.148L158.67,206.454L166.191,229.602L146.5,215.296L126.809,229.602L134.33,206.454L114.64,192.148L138.979,192.148L146.5,169ZM216.5,169L224.021,192.148L248.36,192.148L228.67,206.454L236.191,229.602L216.5,215.296L196.809,229.602L204.33,206.454L184.64,192.148L208.979,192.148L216.5,169ZM286.5,169L294.021,192.148L318.36,192.148L298.67,206.454L306.191,229.602L286.5,215.296L266.809,229.602L274.33,206.454L254.64,192.148L278.979,192.148L286.5,169ZM356.5,169L364.021,192.148L388.36,192.148L368.67,206.454L376.191,229.602L356.5,215.296L336.809,229.602L344.33,206.454L324.64,192.148L348.979,192.148L356.5,169Z'/>
+            </clipPath>
+            <g clip-path='url(#_clip1)'>
+                <rect x='44.64' y='147' width='68.7442' height='98' style='fill:var(--col-orange);'/>
+            </g>
+        </g>
+    </svg></span>                    </div>
+                    <p class="fs-small col-gray-500">
+                        March 27 2022 2:19AM                    </p>
+                </div>
+                <div class="px-1">
+                    <p>So one thing research will give you on Goldco is a flood a tsunami of good reviews. Bought and paid for every one of them. They are so busy building their scam it can't be stopped. I lost half my retirement and have found a few reviewers that report the same scam. </p>
+<p>The truth is not out there about Goldco and it is criminal. They sell you precious metals at a price that is double the market value. They are stealing retirement funds and the world is just encouraging them to do it. Shame on the lawmakers, shame on these greedy ** stealing retirement funds. I'm screwed. Save yourself!</p>
+                </div>
+                <cite class='col-blue flex fs-small m-1' style="gap: 1em">
+                    Matthew O.                                            <address class='col-gray-500'>
+                            <svg width="11px" height="15px">
+                                <g class="map-marker" stroke-linejoin="round" style="fill: currentColor; stroke-width: 1px; stroke: currentColor;">
+                                    <path d="M8.27836803,8.26264943 C8.74396177,7.54052693 9.02457713,6.95098765 9.12956678,6.49212846 C9.2092362,6.18283629 9.25,5.86245281 9.25,5.53597122 C9.249953,5.5124664 9.249953,5.5124664 9.24972135,5.47080386 C9.24995345,5.44814521 9.24995345,5.44814521 9.25,5.42543507 C9.25,3.39837926 7.57384691,1.75 5.5,1.75 C3.42615309,1.75 1.75,3.39837926 1.75,5.42543507 C1.75004655,5.44814521 1.75004655,5.44814521 1.75027865,5.47080386 L1.75028138,5.48901442 C1.750047,5.5124664 1.750047,5.5124664 1.75,5.53597122 C1.75,6.09778805 1.87081415,6.64083036 2.11692421,7.17479804 C2.17856061,7.32931957 2.26148368,7.4930142 2.36626651,7.66535926 C3.23854542,9.10006908 4.27908425,10.7478745 5.48770562,12.608419 C6.05549646,11.7160112 6.98355527,10.2708668 8.27836803,8.26264943 Z M0.25,5.42543507 C0.25,2.56429028 2.60328416,0.25 5.5,0.25 C8.39671584,0.25 10.75,2.56429028 10.75,5.42543507 C10.7499346,5.45736337 10.7499346,5.45736337 10.7496108,5.47102845 C10.749935,5.50347288 10.749935,5.50347288 10.75,5.53597122 C10.75,5.98892664 10.6932421,6.43501557 10.5870681,6.84604304 C10.4419154,7.48223521 10.0910959,8.2192649 9.53904498,9.07548006 C7.49416303,12.2470332 6.35407002,14.0300444 6.1451571,14.3824556 C5.86214891,14.8598567 5.17665223,14.8751866 4.8725852,14.4109144 C3.3792156,12.1307264 2.11663683,10.1421507 1.08456306,8.44461292 C0.937888066,8.20336433 0.817400808,7.96551597 0.739756125,7.76788741 C0.418648979,7.07462498 0.25,6.31657197 0.25,5.53597122 C0.25005827,5.50682756 0.250064285,5.50381917 0.250298744,5.48011007 C0.250064698,5.45700541 0.250058504,5.45398269 0.25,5.42543507 Z"></path>
+                                </g>
+                            </svg>
+                            Santee, CA                        </address>
+                                    </cite>
+
+
+
+
+*/
+int business_review_analyzer::read_review_file_retirement_living(){
+int err_cnt = 0;
+
+static const std::string keyword_a = "<span class='inline-stars\'";
+static const std::string keyword_b = "<title>";
+static const std::string keyword_c = "Star</title>";
+static const std::string keyword_d = "Stars</title>";
+static const std::string keyword_e = "<p class=\"fs-small col-gray-500\">";
+static const std::string keyword_f = "<div class=\"px-1\">";
+static const std::string keyword_g = "</div>";
+static const std::string keyword_h = "<cite class";
+static const std::string keyword_i = "<address";
+static const std::string keyword_j = "</address>";
+static const std::string keyword_k = "</cite>";
+
+return err_cnt;
+}
 
 
 /*

@@ -124,6 +124,7 @@ enum business_review_type{
     BUSINESS_REVIEW_TYPE_BBB,
     BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS,
     BUSINESS_REVIEW_TYPE_GOOGLE,
+    BUSINESS_REVIEW_TYPE_RETIREMENT_LIVING,
     BUSINESS_REVIEW_TYPE_TRUSTLINK,  /* https://www.trustlink.org/Reviews/Goldco-206527051 */
     BUSINESS_REVIEW_TYPE_TRUSTPILOT,
     BUSINESS_REVIEW_TYPE_YELP, /* https://www.yelp.com/biz/goldco-calabasas */
@@ -295,6 +296,7 @@ private:
     int read_review_file_bbb();
     int read_review_file_consumer_affairs();
     int read_review_file_google();
+    int read_review_file_retirement_living();
     int read_review_file_trustlink();
     int read_review_file_trustpilot();
     int read_review_file_yelp();

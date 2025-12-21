@@ -16,3 +16,4 @@
 /gcc/Release/
 /test/files/*.csv
 /test/files/*.tsv
+*.vpwhistxml
