@@ -180,6 +180,7 @@ public:
     static std::shared_ptr<tm> parse_date_mon_day_year( const std::string& date_str );
     static std::shared_ptr<tm> parse_date_ymd_dash( const std::string& date_str );
     static std::shared_ptr<tm> parse_date_mdy_slash( const std::string& date_str );
+    static std::shared_ptr<tm> parse_date_mdyt( const std::string& date_str );
     static std::shared_ptr<tm> parse_date_t_time( const std::string& date_str );
 private:
     enum bbb_parse_state{
@@ -199,6 +200,18 @@ private:
         CONSUMER_AFFAIRS_PARSE_STATE_PARSING_REVIEW_STR,
 
         CONSUMER_AFFAIRS_PARSE_STATE_DONE
+        };
+
+    enum retirement_living_parse_state{
+        RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW,
+        RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_RATING,
+        RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_DATE,
+        RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW_STR,
+        RETIREMENT_LIVING_PARSE_STATE_PARSING_REVIEW_STR,
+        RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_AUTHOR,
+        RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_ADDRESS,
+
+        RETIREMENT_LIVING_PARSE_STATE_DONE
         };
 
     enum trustlink_parse_state{

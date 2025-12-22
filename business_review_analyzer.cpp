@@ -462,7 +462,8 @@ return result;
 /*
 2/15/2023
 */
-std::shared_ptr<tm> business_review_analyzer::parse_date_mdy_slash( const std::string& date_str ){
+std::shared_ptr<tm> business_review_analyzer::parse_date_mdy_slash( 
+    const std::string& date_str ){
 const std::string::size_type first_slash_pos = date_str.find("/");
 const std::string::size_type second_slash_pos =
     (std::string::npos == first_slash_pos ) ? std::string::npos :
@@ -503,6 +504,107 @@ if( result->tm_year < 0 ){
 return result;
 }
 
+/*
+December 21 2023 8:33PM 
+April 25 2024 1:19AM
+*/
+std::shared_ptr<tm> business_review_analyzer::parse_date_mdyt(
+    const std::string& date_str ){
+
+std::string date_str_trimmed = date_str;
+trim_str(&date_str_trimmed);
+
+/* split into month/day/year/time */
+std::vector<std::string> v;
+split_str( date_str_trimmed, &v);
+static const std::string empty_str;
+std::string month_str = (v.size() > 0) ? v.at(0) : empty_str;
+trim_str(&month_str);
+std::string day_str = (v.size() > 1) ? v.at(1) : empty_str;
+trim_str(&day_str);
+std::string year_str = (v.size() > 2) ? v.at(2) : empty_str;
+trim_str(&year_str);
+std::string time_str = (v.size() > 3) ? v.at(3) : empty_str;
+trim_str(&time_str);
+
+/* month */
+static std::map<std::string, int> month_int_map;
+if(month_int_map.empty()){
+    month_int_map["january"] = 1;
+    month_int_map["february"] = 2;
+    month_int_map["march"] = 3;
+    month_int_map["april"] = 4;
+    month_int_map["may"] = 5;
+    month_int_map["june"] = 6;
+    month_int_map["july"] = 7;
+    month_int_map["august"] = 8;
+    month_int_map["september"] = 9;
+    month_int_map["october"] = 10;
+    month_int_map["november"] = 11;
+    month_int_map["december"] = 12;
+    }
+std::string month_lower = month_str;
+make_lower_str(&month_lower);
+const std::map<std::string, int>::const_iterator
+    month_int_map_itr = month_int_map.find(month_lower);
+const int month_int = (month_int_map.end() == month_int_map_itr) ?
+    1 : month_int_map_itr->second;
+
+/* day */
+const int day_int = atoi(day_str.c_str());
+
+/* year */
+const int year_int = atoi(year_str.c_str());
+
+/* time - format is like "8:33PM" or "1:19AM" */
+int hour_int = 12;
+int minute_int = 0;
+if( !time_str.empty() ){
+    const std::string::size_type colon_pos = time_str.find(":");
+    if( std::string::npos != colon_pos ){
+        std::string hour_str = time_str.substr(0, colon_pos);
+        std::string minute_ampm_str = time_str.substr(colon_pos + 1);
+        hour_int = atoi(hour_str.c_str());
+        
+        /* extract minute and AM/PM */
+        std::string::size_type am_pos = minute_ampm_str.find("AM");
+        std::string::size_type pm_pos = minute_ampm_str.find("PM");
+        bool is_am = (std::string::npos != am_pos);
+        bool is_pm = (std::string::npos != pm_pos);
+        
+        if( is_am || is_pm ){
+            std::string::size_type ampm_pos = is_am ? am_pos : pm_pos;
+            std::string minute_str = minute_ampm_str.substr(0, ampm_pos);
+            minute_int = atoi(minute_str.c_str());
+            
+            /* convert to 24-hour format */
+            if( is_pm ){
+                if( hour_int != 12 ){
+                    hour_int += 12;
+                    }
+                }
+            else{ /* is_am */
+                if( hour_int == 12 ){
+                    hour_int = 0;
+                    }
+                }
+            }
+        }
+    }
+
+/* output */
+std::shared_ptr<tm> result(new struct tm);
+tm *tms = result.get();
+memset( tms, 0, sizeof(tm));
+result->tm_year = year_int - 1900;
+result->tm_mon =  month_int-1;
+result->tm_mday = day_int;
+result->tm_hour = hour_int;
+result->tm_min = minute_int;
+result->tm_sec = 0;
+
+return result;
+}
 
 /*
 2019-10-29T13:39:37.000Z
@@ -623,7 +725,7 @@ switch(m_business_review_type){
 
 remove_invalid_reviews_outside_time_range();
 
-std::cout << "(within time range) review_count=" << m_reviews.size() << "\n";
+std::cout << "(within time range) review_count=" << m_reviews.size() << "\n\n";
 
 
 err_cnt += init_review_str_count_map();
@@ -1339,17 +1441,234 @@ return err_cnt;
 int business_review_analyzer::read_review_file_retirement_living(){
 int err_cnt = 0;
 
-static const std::string keyword_a = "<span class='inline-stars\'";
-static const std::string keyword_b = "<title>";
-static const std::string keyword_c = "Star</title>";
-static const std::string keyword_d = "Stars</title>";
-static const std::string keyword_e = "<p class=\"fs-small col-gray-500\">";
-static const std::string keyword_f = "<div class=\"px-1\">";
-static const std::string keyword_g = "</div>";
-static const std::string keyword_h = "<cite class";
-static const std::string keyword_i = "<address";
-static const std::string keyword_j = "</address>";
-static const std::string keyword_k = "</cite>";
+static std::vector<std::string> months;
+months.push_back("January");
+months.push_back("February");
+months.push_back("March");
+months.push_back("April");
+months.push_back("May");
+months.push_back("June");
+months.push_back("July");
+months.push_back("August");
+months.push_back("September");
+months.push_back("October");
+months.push_back("November");
+months.push_back("December");
+
+size_t line_count = 0;
+std::ifstream ifs(m_file_name.c_str());
+
+retirement_living_parse_state parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW;
+business_review *review = nullptr;
+while(ifs.good()){
+    std::string line;
+    std::getline(ifs,line);
+    ++line_count;
+
+    static const std::string whitespace = " \n\t\v\f";
+    static const std::string digits = "0123456789";
+
+    static const std::string keyword_a = "<span class='inline-stars'";
+    static const std::string keyword_b = "<title>";
+    static const std::string keyword_c = "Star</title>";
+    static const std::string keyword_d = "Stars</title>";
+    static const std::string keyword_e = "<p class=\"fs-small col-gray-500\">";
+    static const std::string keyword_f = "<div class=\"px-1\">";
+    static const std::string keyword_g = "</div>";
+    static const std::string keyword_h = "<cite class";
+    static const std::string keyword_i = "<address";
+    static const std::string keyword_j = "</address>";
+    static const std::string keyword_k = "</cite>";
+
+    static const std::string paragraph_open_tag = "<p>";
+    static const std::string paragraph_close_tag = "</p>";
+
+
+    const std::string::size_type start_non_ws_pos =
+        line.find_first_not_of( whitespace );
+    const std::string::size_type first_digit_pos =
+        line.find_first_of( digits );
+
+    const std::string::size_type keyword_a_pos = line.find(keyword_a);
+    const std::string::size_type keyword_b_pos = line.find(keyword_b);
+    const std::string::size_type keyword_c_pos = line.find(keyword_c);
+    const std::string::size_type keyword_d_pos = line.find(keyword_d);
+    const std::string::size_type keyword_e_pos = line.find(keyword_e);
+    const std::string::size_type keyword_f_pos = line.find(keyword_f);
+    const std::string::size_type keyword_g_pos = line.find(keyword_g);
+    const std::string::size_type keyword_h_pos = line.find(keyword_h);
+    const std::string::size_type keyword_i_pos = line.find(keyword_i);
+    const std::string::size_type keyword_j_pos = line.find(keyword_j);
+
+    const std::string::size_type paragraph_open_pos = line.find(paragraph_open_tag);
+    const std::string::size_type paragraph_close_pos = line.find(paragraph_close_tag);
+
+    std::string::size_type month_pos = std::string::npos;
+    std::vector<std::string>::const_iterator month_itr = months.begin();
+    for( ; months.end() != month_itr && (std::string::npos == month_pos ); ++month_itr ){
+        const std::string& mon = *month_itr;
+        month_pos = line.find(mon);
+        }
+
+    /* start new review */
+    if( std::string::npos != keyword_a_pos ){
+        m_reviews.push_back(business_review());
+        review = &(m_reviews.back());
+        review->m_review_type = BUSINESS_REVIEW_TYPE_RETIREMENT_LIVING;
+        parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_RATING;
+        }
+
+    switch(parse_state){
+        case RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW:
+            /* skip */
+            break;
+        case RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_RATING:
+            if( std::string::npos != keyword_b_pos ){
+                /* look for rating in title tag */
+                std::string::size_type rating_start_pos = keyword_b_pos + keyword_b.length();
+                std::string::size_type rating_end_pos = std::string::npos;
+                if( std::string::npos != keyword_c_pos ){
+                    rating_end_pos = keyword_c_pos;
+                    }
+                else if( std::string::npos != keyword_d_pos ){
+                    rating_end_pos = keyword_d_pos;
+                    }
+                if( std::string::npos != rating_end_pos && rating_end_pos > rating_start_pos ){
+                    std::string rating_str = line.substr(rating_start_pos, rating_end_pos - rating_start_pos);
+                    trim_str(&rating_str);
+                    /* extract first digit from rating string (e.g., "4.75 Stars" -> "4") */
+                    std::string::size_type digit_pos = rating_str.find_first_of(digits);
+                    if( std::string::npos != digit_pos ){
+                        review->m_star_count = static_cast<int>(rating_str.at(digit_pos) - '0');
+                        }
+                    parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_DATE;
+                    }
+                }
+            break;
+        case RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_DATE:
+            if( std::string::npos != month_pos ){
+                /* extract date string after the tag */
+                std::string::size_type date_start_pos = month_pos;
+                std::string date_str = line.substr(date_start_pos);
+                trim_str(&date_str);
+                /* date format is like "November 06 2024 8:48PM" - extract first 4 words */
+                std::vector<std::string> date_parts;
+                split_str(date_str, &date_parts);
+                if( ( date_parts.size() >= 4 ) && 
+                     isalnum( date_parts[0].at(0) ) &&
+                     isalnum( date_parts[1].at(0) ) &&
+                     isalnum( date_parts[2].at(0) ) &&
+                     isalnum( date_parts[3].at(0) ) ) {
+                    std::string date_time = date_parts[0] + " " + date_parts[1] + 
+                        " " + date_parts[2] + " " + date_parts[3];
+                    review->m_date_str = date_time;
+                    review->m_time_stamp_tm = parse_date_mdyt(review->m_date_str);
+                    review->m_time_stamp = mktime((review->m_time_stamp_tm).get());
+                    static const time_t time_err_seconds = 60;
+                    review->m_time_stamp_min = (review->m_time_stamp > time_err_seconds) ?
+                        (review->m_time_stamp - time_err_seconds) : 0;
+                    review->m_time_stamp_max = review->m_time_stamp + time_err_seconds;
+                    parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW_STR;
+                    }
+                }
+            break;
+        case RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW_STR:
+            if( std::string::npos != keyword_f_pos ){
+                /* found review div start, look for paragraph content */
+                parse_state = RETIREMENT_LIVING_PARSE_STATE_PARSING_REVIEW_STR;
+                }
+            break;
+        case RETIREMENT_LIVING_PARSE_STATE_PARSING_REVIEW_STR:
+            /* check if we've reached the closing div for the review (px-1) */
+            /* if we see </div> and no <p> tags on this line, we're done with review text */
+            if( std::string::npos != keyword_g_pos && std::string::npos == paragraph_open_pos ){
+                /* this line contains </div> but no <p> tags, so we're done with review text */
+                parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_AUTHOR;
+                break;
+                }
+            if( std::string::npos != paragraph_open_pos ){
+                /* extract text from paragraph */
+                std::string::size_type text_start_pos = paragraph_open_pos + paragraph_open_tag.length();
+                if( std::string::npos != paragraph_close_pos && paragraph_close_pos > text_start_pos ){
+                    std::string review_text = line.substr(text_start_pos, paragraph_close_pos - text_start_pos);
+                    if( !(review->m_review_str).empty() ){
+                        (review->m_review_str).append(" ");
+                        }
+                    (review->m_review_str).append(review_text);
+                    convert_whitespace_to_space(&(review->m_review_str));
+                    }
+                else{
+                    /* paragraph spans multiple lines */
+                    std::string review_text = line.substr(text_start_pos);
+                    if( !(review->m_review_str).empty() ){
+                        (review->m_review_str).append(" ");
+                        }
+                    (review->m_review_str).append(review_text);
+                    convert_whitespace_to_space(&(review->m_review_str));
+                    }
+                }
+            else if( std::string::npos != paragraph_close_pos ){
+                /* end of paragraph */
+                std::string review_text = line.substr(0, paragraph_close_pos);
+                if( !(review->m_review_str).empty() ){
+                    (review->m_review_str).append(" ");
+                    }
+                (review->m_review_str).append(review_text);
+                convert_whitespace_to_space(&(review->m_review_str));
+                }
+            else if( std::string::npos != start_non_ws_pos ){
+                /* continue reading review text (between paragraphs or after last paragraph) */
+                if( !(review->m_review_str).empty() ){
+                    (review->m_review_str).append(" ");
+                    }
+                (review->m_review_str).append(line);
+                convert_whitespace_to_space(&(review->m_review_str));
+                }
+            break;
+        case RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_AUTHOR:
+            if( std::string::npos != keyword_h_pos ){
+                /* extract author name - it's between cite tag and address tag */
+                std::string::size_type name_start_pos = keyword_h_pos + keyword_h.length();
+                /* find the ">" after cite class */
+                std::string::size_type cite_open_end = line.find(">", name_start_pos);
+                if( std::string::npos != cite_open_end ){
+                    name_start_pos = cite_open_end + 1;
+                    }
+                std::string::size_type name_end_pos = keyword_i_pos;
+                if( std::string::npos != name_end_pos && name_end_pos > name_start_pos ){
+                    std::string name_str = line.substr(name_start_pos, name_end_pos - name_start_pos);
+                    trim_str(&name_str);
+                    review->m_full_name = name_str;
+                    split_name(review->m_full_name, &(review->m_parsed_name));
+                    parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_ADDRESS;
+                    }
+                }
+            break;
+        case RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_ADDRESS:
+            if( std::string::npos != keyword_i_pos ){
+                /* extract address - it's between address tag and closing address tag */
+                std::string::size_type addr_start_pos = keyword_i_pos + keyword_i.length();
+                std::string::size_type addr_open_end = line.find(">", addr_start_pos);
+                if( std::string::npos != addr_open_end ){
+                    addr_start_pos = addr_open_end + 1;
+                    }
+                if( std::string::npos != keyword_j_pos && keyword_j_pos > addr_start_pos ){
+                    std::string addr_str = line.substr(addr_start_pos, keyword_j_pos - addr_start_pos);
+                    trim_str(&addr_str);
+                    review->m_full_location_name = addr_str;
+                    init_city_state_from_full_location_name(review);
+                    parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW;
+                    }
+                }
+            break;
+        case RETIREMENT_LIVING_PARSE_STATE_DONE:
+            break;
+        }
+    }
+std::cout << "total review_count=" << m_reviews.size() << "\n";
+std::cout << "line_count=" << line_count << "\n";
+
+sort_reviews_by_timestamp();
 
 return err_cnt;
 }
