@@ -158,8 +158,18 @@ struct business_review{
     time_t                      m_time_stamp_min=0;
     time_t                      m_time_stamp_max=0;
     std::shared_ptr<tm>         m_time_stamp_tm;
+    bool                        m_maybe_missing=false;
     std::string                 m_review_str;
+public:
+    void merge( const business_review& r );
 };
+
+typedef std::pair<std::string, std::string> business_review_key;
+void init_business_review_key(const business_review& r, business_review_key *k );
+
+typedef std::map<business_review_key, business_review> brkey_br_map;
+typedef brkey_br_map::const_iterator brkey_br_map_citr;
+typedef brkey_br_map::iterator brkey_br_map_itr;
 
 typedef std::vector<business_review> business_review_vec;
 typedef business_review_vec::const_iterator business_review_vec_citr;
@@ -303,12 +313,20 @@ private:
     szt_vec m_last_name_letter_tallies;
     
 public:
+    static size_t count_business_review_type( 
+        const std::vector<std::shared_ptr<business_review_analyzer> >& 
+        analyzer_vec, const business_review_type& t );
+public:
     business_review_analyzer(){}
    ~business_review_analyzer(){}
+    int init_merge( const std::vector<std::shared_ptr<business_review_analyzer> >& 
+        analyzer_vec, const business_review_type& t );
+    int merge_reviews( const business_review_vec& reviews );
     void set_file_name(const std::string& file_name){ m_file_name = file_name; }
     void set_start_time_stamp(const time_t& start_time_stamp){ m_start_time_stamp = start_time_stamp; }
     void set_end_time_stamp(const time_t& end_time_stamp){ m_end_time_stamp = end_time_stamp; }
     int execute();
+    int write_output_files();
 private:
     int reset_working_data();
     int read_review_file_bbb();

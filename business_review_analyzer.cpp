@@ -151,6 +151,45 @@ return result;
 }
 
 
+void business_review::merge( const business_review& r ){
+/* narrow time range */
+if( r.m_time_stamp_min > m_time_stamp_min ){
+    m_time_stamp_min = r.m_time_stamp_min;
+    }
+if (r.m_time_stamp_max < m_time_stamp_max) {
+    m_time_stamp_max = r.m_time_stamp_max;
+    }
+if( m_time_stamp_min > m_time_stamp_max ){
+    m_time_stamp_min = (m_time_stamp_min + m_time_stamp_max)/2;
+    m_time_stamp_max = m_time_stamp_min;
+    }
+
+/* average time stamp, clamp to range */
+m_time_stamp = ( m_time_stamp + r.m_time_stamp )/2;
+if( m_time_stamp < m_time_stamp_min ){
+    m_time_stamp = m_time_stamp_min;
+    }
+else if( m_time_stamp > m_time_stamp_max ){
+    m_time_stamp = m_time_stamp_max;
+    }
+
+/* maybe missing */
+m_maybe_missing = m_maybe_missing || r.m_maybe_missing;
+
+/* take the longest review */
+if( r.m_review_str.length() > m_review_str.length() ){
+    m_review_str =  r.m_review_str;
+    } 
+}
+
+
+void init_business_review_key(const business_review& r, business_review_key *k ){
+if( nullptr != k ){
+    k->first = r.m_full_name;
+    k->second = (r.m_review_str.length() < 64) ? r.m_review_str:
+        r.m_review_str.substr(0, 64);
+    }
+}
 
 int business_review_analyzer::run_main( int argc, char *argv[] )
 {
@@ -200,6 +239,38 @@ if( argc > 1 ){
         const std::string& file_name = *file_name_itr;
         p.m_file_name = file_name;
         err_cnt += do_analysis( p, &group );
+        }
+
+    /* for each business_review_type */
+    std::vector<std::shared_ptr<business_review_analyzer>> analyzer_vec;
+    business_review_analyzer_group::analyzer_vec_citr group_itr = group.begin();
+    for( ; group.end() != group_itr; ++group_itr ){
+        analyzer_vec.push_back(*group_itr);
+        }
+    
+    for( int t_int = static_cast<int>(BUSINESS_REVIEW_TYPE_BBB); 
+         t_int < static_cast<int>(BUSINESS_REVIEW_TYPE_COUNT); 
+         ++t_int ){
+        business_review_type t = static_cast<business_review_type>(t_int);
+        
+        /* t_count = count_business_review_type(group, t ) */
+        size_t t_count = count_business_review_type(analyzer_vec, t);
+        
+        /* if( t_count > 1 ) */
+        if( t_count > 1 ){
+            /* make new business_review_analyzer initializing using init_merge(group, t) */
+            std::shared_ptr<business_review_analyzer> merged_analyzer(new business_review_analyzer);
+            err_cnt += merged_analyzer->init_merge(analyzer_vec, t);
+            
+            /* call write_output_files() on new business_review_analyzer */
+            std::cout << "merged file type: "
+                << business_review_type_to_str(t) << "\n"
+                << "    " << (merged_analyzer->m_reviews.size()) << " reviews\n\n";
+            err_cnt += merged_analyzer->write_output_files();
+            
+            /* add new business_review_analyzer to group */
+            group.add_analyzer(merged_analyzer);
+            }
         }
     }
 return err_cnt;
@@ -694,6 +765,137 @@ if( result->tm_year < 0 ){
 return result;
 }
 
+size_t business_review_analyzer::count_business_review_type( 
+    const std::vector<std::shared_ptr<business_review_analyzer> >& 
+    analyzer_vec, const business_review_type& t ){
+size_t count = 0;
+for( size_t i = 0; i < analyzer_vec.size(); ++i ){
+    std::shared_ptr<business_review_analyzer> a = analyzer_vec.at(i);
+    if( ( nullptr != a.get() ) && ( t == a->m_business_review_type ) ){
+        ++count;
+        }
+    }
+return count;
+}
+
+int business_review_analyzer::init_merge( 
+    const std::vector<std::shared_ptr<business_review_analyzer> >& analyzer_vec, 
+    const business_review_type& t ){
+int err_cnt = 0;
+
+m_business_review_type = t;
+for( size_t i = 0; i < analyzer_vec.size(); ++i ){
+    std::shared_ptr<business_review_analyzer> a = analyzer_vec.at(i);
+    if( ( nullptr != a.get() ) && ( t == a->m_business_review_type ) ){
+        if( m_reviews.empty() ){
+            m_file_name = a->m_file_name + ".merge";
+            m_start_time_stamp = a->m_start_time_stamp;
+            m_end_time_stamp = a->m_end_time_stamp;
+            m_reviews = a->m_reviews;
+            }
+        else{
+            err_cnt += merge_reviews( a->m_reviews );
+            }
+        }
+    }
+
+sort_reviews_by_timestamp();
+err_cnt += init_review_str_count_map();
+err_cnt += init_review_count_str_vec();
+err_cnt += init_star_tv_map();
+
+return err_cnt;
+}
+
+int business_review_analyzer::merge_reviews( const business_review_vec& reviews ){
+int err_cnt = 0;
+
+/* initialize maps, time limits */
+time_t time_stamp_min_a = std::numeric_limits<time_t>::max();
+time_t time_stamp_max_a = 0;
+brkey_br_map brkey_br_map_a;
+business_review_key brkey_a;
+business_review_vec_citr br_itr_a = m_reviews.begin();
+for(; m_reviews.end() != br_itr_a; ++br_itr_a ){
+    const business_review& br_a = *br_itr_a;
+    if( br_a.m_time_stamp_min < time_stamp_min_a ){
+        time_stamp_min_a = br_a.m_time_stamp_min;
+        }
+    if( br_a.m_time_stamp_max > time_stamp_max_a ){
+        time_stamp_max_a = br_a.m_time_stamp_max;
+        }
+    init_business_review_key(br_a, &brkey_a );
+    brkey_br_map_a[brkey_a] = br_a;
+    }
+
+time_t time_stamp_min_b = std::numeric_limits<time_t>::max();
+time_t time_stamp_max_b = 0;
+brkey_br_map brkey_br_map_b;
+business_review_key brkey_b;
+business_review_vec_citr br_itr_b = reviews.begin();
+for(; reviews.end() != br_itr_b; ++br_itr_b ){
+    const business_review& br_b = *br_itr_b;
+    if( br_b.m_time_stamp_min < time_stamp_min_b ){
+        time_stamp_min_b = br_b.m_time_stamp_min;
+        }
+    if( br_b.m_time_stamp_max > time_stamp_max_b ){
+        time_stamp_max_b = br_b.m_time_stamp_max;
+        }
+    init_business_review_key(br_b, &brkey_b );
+    brkey_br_map_b[brkey_b] = br_b;
+    }
+
+
+m_reviews.clear();
+
+/* for each key_a in key_map_a */
+brkey_br_map_itr brkey_br_map_a_itr = brkey_br_map_a.begin();
+for(; brkey_br_map_a.end() != brkey_br_map_a_itr; ++brkey_br_map_a_itr ){
+    const business_review_key& key_a = brkey_br_map_a_itr->first;
+    business_review& review_a = brkey_br_map_a_itr->second;
+    
+    /* if key_a found in key_map_b */
+    brkey_br_map_itr brkey_br_map_b_itr = brkey_br_map_b.find(key_a);
+    if( brkey_br_map_b.end() != brkey_br_map_b_itr ){
+        /* merge reviews a+b --> m_reviews.push_back( merged_r ) */
+        business_review merged_review = review_a;
+        const business_review& review_b = brkey_br_map_b_itr->second;
+        merged_review.merge(review_b);
+        m_reviews.push_back(merged_review);
+        }
+    else{
+        /* if time stamp of review a is in time range (time_stamp_min_b, time_stamp_max_b) */
+        if( ( review_a.m_time_stamp >= time_stamp_min_b ) && 
+            ( review_a.m_time_stamp <= time_stamp_max_b ) ){
+            /* add review a with m_maybe_missing = true */
+            review_a.m_maybe_missing = true;
+            m_reviews.push_back(review_a);
+            }
+        }
+    }
+
+/* for each key_b in key_map_b */
+brkey_br_map_itr brkey_br_map_b_itr = brkey_br_map_b.begin();
+for(; brkey_br_map_b.end() != brkey_br_map_b_itr; ++brkey_br_map_b_itr ){
+    const business_review_key& key_b = brkey_br_map_b_itr->first;
+    business_review& review_b = brkey_br_map_b_itr->second;
+    
+    /* if key_b not found in key_map_a */
+    brkey_br_map_itr brkey_br_map_a_itr = brkey_br_map_a.find(key_b);
+    if( brkey_br_map_a.end() == brkey_br_map_a_itr ){
+        /* if time stamp of review b is in time range (time_stamp_min_a, time_stamp_max_a) */
+        if( ( review_b.m_time_stamp >= time_stamp_min_a ) && 
+            ( review_b.m_time_stamp <= time_stamp_max_a ) ){
+            /* add review b with m_maybe_missing = true */
+            review_b.m_maybe_missing = true;
+            m_reviews.push_back(review_b);
+            }
+        }
+    }
+
+return err_cnt;
+}
+
 int business_review_analyzer::execute(){
 int err_cnt = 0;
 
@@ -737,10 +939,16 @@ remove_invalid_reviews_outside_time_range();
 
 std::cout << "(within time range) review_count=" << m_reviews.size() << "\n\n";
 
-
 err_cnt += init_review_str_count_map();
 err_cnt += init_review_count_str_vec();
 err_cnt += init_star_tv_map();
+err_cnt += write_output_files();
+return err_cnt;
+}
+
+int business_review_analyzer::write_output_files(){
+int err_cnt = 0;
+
 err_cnt += write_city_bins();
 err_cnt += write_first_letter_tallies();
 err_cnt += write_review_count_table();
