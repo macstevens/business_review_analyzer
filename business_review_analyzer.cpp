@@ -1627,16 +1627,16 @@ while(ifs.good()){
             break;
         case RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_AUTHOR:
             if( std::string::npos != keyword_h_pos ){
-                /* extract author name - it's between cite tag and address tag */
-                std::string::size_type name_start_pos = keyword_h_pos + keyword_h.length();
-                /* find the ">" after cite class */
-                std::string::size_type cite_open_end = line.find(">", name_start_pos);
-                if( std::string::npos != cite_open_end ){
-                    name_start_pos = cite_open_end + 1;
-                    }
+                /* skip to next line */
+                parse_state = RETIREMENT_LIVING_PARSE_STATE_PARSING_AUTHOR;
+                }
+            break;
+        case RETIREMENT_LIVING_PARSE_STATE_PARSING_AUTHOR:
+            if( std::string::npos != keyword_i_pos ){
+                /* extract author name - it's before address tag */
                 std::string::size_type name_end_pos = keyword_i_pos;
-                if( std::string::npos != name_end_pos && name_end_pos > name_start_pos ){
-                    std::string name_str = line.substr(name_start_pos, name_end_pos - name_start_pos);
+                if( std::string::npos != name_end_pos && name_end_pos > 0 ){
+                    std::string name_str = line.substr(0, name_end_pos);
                     trim_str(&name_str);
                     review->m_full_name = name_str;
                     split_name(review->m_full_name, &(review->m_parsed_name));
@@ -1645,20 +1645,15 @@ while(ifs.good()){
                 }
             break;
         case RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_ADDRESS:
-            if( std::string::npos != keyword_i_pos ){
-                /* extract address - it's between address tag and closing address tag */
-                std::string::size_type addr_start_pos = keyword_i_pos + keyword_i.length();
-                std::string::size_type addr_open_end = line.find(">", addr_start_pos);
-                if( std::string::npos != addr_open_end ){
-                    addr_start_pos = addr_open_end + 1;
-                    }
-                if( std::string::npos != keyword_j_pos && keyword_j_pos > addr_start_pos ){
-                    std::string addr_str = line.substr(addr_start_pos, keyword_j_pos - addr_start_pos);
+            if( std::string::npos != keyword_j_pos ){
+                /* extract address - it's before closing address tag */
+                if( std::string::npos != keyword_j_pos && keyword_j_pos > 0 ){
+                    std::string addr_str = line.substr(0, keyword_j_pos);
                     trim_str(&addr_str);
                     review->m_full_location_name = addr_str;
                     init_city_state_from_full_location_name(review);
-                    parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW;
                     }
+                parse_state = RETIREMENT_LIVING_PARSE_STATE_SEARCHING_FOR_REVIEW;
                 }
             break;
         case RETIREMENT_LIVING_PARSE_STATE_DONE:
