@@ -793,7 +793,7 @@ for( size_t i = 0; i < analyzer_vec.size(); ++i ){
             m_end_time_stamp = a->m_end_time_stamp;
             m_reviews = a->m_reviews;
             }
-        else{
+        else if( !( a->m_reviews ).empty() ){
             err_cnt += merge_reviews( a->m_reviews );
             }
         }
@@ -845,6 +845,13 @@ for(; reviews.end() != br_itr_b; ++br_itr_b ){
     brkey_br_map_b[brkey_b] = br_b;
     }
 
+std::cout << "merge_reviews "
+    << "  m_reviews.size()=" << m_reviews.size()
+    << "  brkey_br_map_a.size()=" << brkey_br_map_a.size()
+    << "  reviews.size()=" << reviews.size()
+    << "  brkey_br_map_b.size()=" << brkey_br_map_b.size()
+    << "\n";
+size_t maybe_missing_count = 0;
 
 m_reviews.clear();
 
@@ -852,7 +859,7 @@ m_reviews.clear();
 brkey_br_map_itr brkey_br_map_a_itr = brkey_br_map_a.begin();
 for(; brkey_br_map_a.end() != brkey_br_map_a_itr; ++brkey_br_map_a_itr ){
     const business_review_key& key_a = brkey_br_map_a_itr->first;
-    business_review& review_a = brkey_br_map_a_itr->second;
+    business_review review_a = brkey_br_map_a_itr->second;
     
     /* if key_a found in key_map_b */
     brkey_br_map_itr brkey_br_map_b_itr = brkey_br_map_b.find(key_a);
@@ -869,8 +876,9 @@ for(; brkey_br_map_a.end() != brkey_br_map_a_itr; ++brkey_br_map_a_itr ){
             ( review_a.m_time_stamp <= time_stamp_max_b ) ){
             /* add review a with m_maybe_missing = true */
             review_a.m_maybe_missing = true;
-            m_reviews.push_back(review_a);
+            ++maybe_missing_count;
             }
+        m_reviews.push_back(review_a);
         }
     }
 
@@ -878,7 +886,7 @@ for(; brkey_br_map_a.end() != brkey_br_map_a_itr; ++brkey_br_map_a_itr ){
 brkey_br_map_itr brkey_br_map_b_itr = brkey_br_map_b.begin();
 for(; brkey_br_map_b.end() != brkey_br_map_b_itr; ++brkey_br_map_b_itr ){
     const business_review_key& key_b = brkey_br_map_b_itr->first;
-    business_review& review_b = brkey_br_map_b_itr->second;
+    business_review review_b = brkey_br_map_b_itr->second;
     
     /* if key_b not found in key_map_a */
     brkey_br_map_itr brkey_br_map_a_itr = brkey_br_map_a.find(key_b);
@@ -888,10 +896,16 @@ for(; brkey_br_map_b.end() != brkey_br_map_b_itr; ++brkey_br_map_b_itr ){
             ( review_b.m_time_stamp <= time_stamp_max_a ) ){
             /* add review b with m_maybe_missing = true */
             review_b.m_maybe_missing = true;
-            m_reviews.push_back(review_b);
+            ++maybe_missing_count;
             }
+        m_reviews.push_back(review_b);
         }
     }
+
+std::cout << "merge_reviews done size=" << m_reviews.size() 
+    << "    maybe_missing_count=" << maybe_missing_count
+    << "\n\n";
+
 
 return err_cnt;
 }
