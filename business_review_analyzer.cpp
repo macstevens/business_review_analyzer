@@ -193,11 +193,13 @@ if( argc > 1 ){
     business_review_analyzer::input_params p;
     p.m_start_time_stamp = start_time_stamp;
     p.m_end_time_stamp = end_time_stamp;
+    
+    business_review_analyzer_group group;
     std::vector<std::string>::const_iterator file_name_itr = file_names.begin();
     for( ; file_names.end() != file_name_itr; ++file_name_itr ){
         const std::string& file_name = *file_name_itr;
         p.m_file_name = file_name;
-        err_cnt += do_analysis( p );
+        err_cnt += do_analysis( p, &group );
         }
     }
 return err_cnt;
@@ -205,6 +207,11 @@ return err_cnt;
 
 
 int business_review_analyzer::do_analysis( const input_params& p ){
+business_review_analyzer_group group;
+return do_analysis( p, &group );
+}
+
+int business_review_analyzer::do_analysis( const input_params& p, business_review_analyzer_group *group ){
 
 struct tm *start_tm = localtime( &(p.m_start_time_stamp) );
 char start_time_buf[64];
@@ -220,11 +227,14 @@ std::cout << "Analyze Business Reviews"
     << "   end_time:" << end_time_buf 
     << "\n";
 int err_cnt = 0;
-business_review_analyzer a;
-a.set_file_name(p.m_file_name);
-a.set_start_time_stamp(p.m_start_time_stamp);
-a.set_end_time_stamp(p.m_end_time_stamp);
-err_cnt += a.execute();
+std::shared_ptr<business_review_analyzer> a(new business_review_analyzer);
+a->set_file_name(p.m_file_name);
+a->set_start_time_stamp(p.m_start_time_stamp);
+a->set_end_time_stamp(p.m_end_time_stamp);
+err_cnt += a->execute();
+if( nullptr != group ){
+    group->add_analyzer(a);
+    }
 return err_cnt;
 }
 
@@ -3507,6 +3517,46 @@ std::string out_file_name = m_file_name + ".full.tsv";
 std::ofstream ofs(out_file_name);
 write_full_table(&ofs);
 return err_cnt;
+}
+
+
+business_review_analyzer_group::business_review_analyzer_group(){
+}
+
+business_review_analyzer_group::~business_review_analyzer_group(){
+}
+
+void business_review_analyzer_group::add_analyzer(std::shared_ptr<business_review_analyzer> analyzer){
+if( nullptr != analyzer ){
+    m_analyzers.push_back(analyzer);
+    }
+}
+
+size_t business_review_analyzer_group::size() const{
+return m_analyzers.size();
+}
+
+business_review_analyzer_group::analyzer_vec_citr business_review_analyzer_group::begin() const{
+return m_analyzers.begin();
+}
+
+business_review_analyzer_group::analyzer_vec_citr business_review_analyzer_group::end() const{
+return m_analyzers.end();
+}
+
+business_review_analyzer_group::analyzer_vec_itr business_review_analyzer_group::begin(){
+return m_analyzers.begin();
+}
+
+business_review_analyzer_group::analyzer_vec_itr business_review_analyzer_group::end(){
+return m_analyzers.end();
+}
+
+std::shared_ptr<business_review_analyzer> business_review_analyzer_group::at(size_t index) const{
+if( index < m_analyzers.size() ){
+    return m_analyzers.at(index);
+    }
+return std::shared_ptr<business_review_analyzer>();
 }
 
 

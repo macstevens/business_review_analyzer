@@ -120,6 +120,9 @@ Yellow Pages Instructions
 * 
 * */
 
+class business_review_analyzer_group;
+
+
 enum business_review_type{
     BUSINESS_REVIEW_TYPE_BBB,
     BUSINESS_REVIEW_TYPE_CONSUMER_AFFAIRS,
@@ -172,6 +175,7 @@ public:
 public:
     static int run_main( int argc, char *argv[] );
     static int do_analysis( const input_params& p );
+    static int do_analysis( const input_params& p, business_review_analyzer_group *group );
     static void trim_str( std::string *s);
     static void make_lower_str( std::string *s);
     static void convert_whitespace_to_space( std::string *s);
@@ -340,6 +344,28 @@ private:
     int write_std_word_counts();
     void write_full_table(std::ostream *os) const;
     int write_full_table();
+};
+
+class business_review_analyzer_group{
+public:
+    typedef std::vector<std::shared_ptr<business_review_analyzer>> analyzer_vec;
+    typedef analyzer_vec::const_iterator analyzer_vec_citr;
+    typedef analyzer_vec::iterator analyzer_vec_itr;
+
+public:
+    business_review_analyzer_group();
+    ~business_review_analyzer_group();
+
+    void add_analyzer(std::shared_ptr<business_review_analyzer> analyzer);
+    size_t size() const;
+    analyzer_vec_citr begin() const;
+    analyzer_vec_citr end() const;
+    analyzer_vec_itr begin();
+    analyzer_vec_itr end();
+    std::shared_ptr<business_review_analyzer> at(size_t index) const;
+
+private:
+    analyzer_vec m_analyzers;
 };
 
 
