@@ -151,6 +151,54 @@ return result;
 }
 
 
+
+
+bbb_review_format_type parse_file_determine_bbb_review_format_type(
+    const std::string& file_name ){
+
+struct str_type{ const char *m_str; bbb_review_format_type m_bbb_format_type; };
+static const str_type indicator_str_types[] = {
+
+    { "Review from ",                   BBB_REVIEW_FORMAT_TYPE_2024 },
+    { "BBB Scam Tracker",               BBB_REVIEW_FORMAT_TYPE_2024 },
+
+    { "Date: ",                         BBB_REVIEW_FORMAT_TYPE_2025 }, 
+    { "Business Education",             BBB_REVIEW_FORMAT_TYPE_2025 }
+};
+static const size_t indicator_str_type_count =
+    sizeof(indicator_str_types)/sizeof(indicator_str_types[0]);
+
+
+std::vector<size_t> indicator_count_vec(BBB_REVIEW_FORMAT_TYPE_COUNT, 0);
+std::ifstream ifs(file_name.c_str());
+while(ifs.good()){
+    std::string line;
+    std::getline(ifs,line);
+    for( size_t i = 0; i < indicator_str_type_count; ++i ){
+        const str_type& indicator_str_type = indicator_str_types[i];
+        const char *indicator_str = indicator_str_type.m_str;
+        bbb_review_format_type t = indicator_str_type.m_bbb_format_type;
+        if(line.find(indicator_str) != std::string::npos){
+            ++(indicator_count_vec.at(static_cast<size_t>(t)));
+            }
+        }
+    }
+
+bbb_review_format_type result = BBB_REVIEW_FORMAT_TYPE_COUNT;
+size_t result_indicator_count = 0;
+for( size_t j = 0; j < static_cast<size_t>(BBB_REVIEW_FORMAT_TYPE_COUNT); ++j ){
+    const size_t count = indicator_count_vec.at(j);
+    if( count > result_indicator_count ){
+        result = static_cast<bbb_review_format_type>(j);
+        result_indicator_count = count;
+        }
+    }
+
+return result;
+}
+
+
+
 void business_review::merge( const business_review& r ){
 /* narrow time range */
 if( r.m_time_stamp_min > m_time_stamp_min ){
@@ -185,7 +233,8 @@ if( r.m_review_str.length() > m_review_str.length() ){
 
 void init_business_review_key(const business_review& r, business_review_key *k ){
 if( nullptr != k ){
-    k->first = r.m_full_name;
+    static const std::string empty_str;
+    k->first = r.m_parsed_name.empty() ? empty_str : r.m_parsed_name.front();
     k->second = (r.m_review_str.length() < 64) ? r.m_review_str:
         r.m_review_str.substr(0, 64);
     }
@@ -992,6 +1041,49 @@ return err_cnt;
 int business_review_analyzer::read_review_file_bbb(){
 int err_cnt = 0;
 
+const bbb_review_format_type bbb_format =
+    parse_file_determine_bbb_review_format_type( m_file_name );
+switch( bbb_format ){
+    default: /* fall through */
+    case BBB_REVIEW_FORMAT_TYPE_2024:
+        err_cnt += read_review_file_bbb_2024();
+        break;
+    case BBB_REVIEW_FORMAT_TYPE_2025:
+        err_cnt += read_review_file_bbb_2025();
+        break;
+    }
+
+return err_cnt;
+}
+
+/*
+Review from Hilheaton
+5 stars
+
+01/08/2022
+The representatives from Goldco were professonal, sincere, and answered our questions in a timely fashion. The allowed us to consider our options in a timely fashion. Mr. Oliver was well informed and patient. If any of our friends might be interested in investing in precious metals we would recommend Goldco and pass ** the name and phone number of Mr. Oliver.
+
+***** ******
+Review from Kathleen J
+5 stars
+
+01/06/2022
+Jack stayed on point even when he got sick,loved the attention to details and concerns. Thanks!
+Review from Timothy H
+5 stars
+
+01/05/2022
+Every person I spoke with from Goldco was very professional, courteous and had no problem answering my questions. I would not hesitate to recommend them to my friends. Thank you all!
+Review from Wilbur E
+
+    5 stars
+
+    01/03/2022
+    GREAT SERVICE. They helped us through the process every step of the way and mad it easy even when it got difficult. The best
+*/
+int business_review_analyzer::read_review_file_bbb_2024(){
+int err_cnt = 0;
+
 size_t line_count = 0;
 std::ifstream ifs(m_file_name.c_str());
 
@@ -1070,6 +1162,7 @@ while(ifs.good()){
                     }
                 (review->m_review_str).append(line);
                 convert_whitespace_to_space(&(review->m_review_str));
+                trim_str(&(review->m_review_str));
                 }
             break;
         case BBB_PARSE_STATE_DONE:
@@ -1083,6 +1176,130 @@ sort_reviews_by_timestamp();
 
 return err_cnt;
 }
+
+
+/*
+Review fromSusan K
+
+Date: 12/21/2025
+5 stars
+I would highly recommend Goldco! Right from the start they have been informative and very helpful. REMOVED. has always returned phone calls in a timely manner and provided insight to make decisions. No pressure, just facts and information to guide you in your investments. And anyone else we have dealt with, REMOVEDand others), have been polite and awesome! A++experience!
+Review fromJackie M
+
+Date: 12/19/2025
+5 stars
+The customer service at REMOVEDis exceptional. Knowledgeable and thorough REMOVEDevery step of the way.
+Review fromSteve B
+
+Date: 12/19/2025
+5 stars
+I have been a customer of REMOVEDfor almost 3 years. And all transactions with them have been very smooth. My most recent transaction was handled and completed in a very satisfactory manner. I will continue to do business with Goldco for all my precious metal orders.
+*/
+int business_review_analyzer::read_review_file_bbb_2025(){
+int err_cnt = 0;
+
+size_t line_count = 0;
+std::ifstream ifs(m_file_name.c_str());
+
+bbb_2025_parse_state parse_state = BBB_2025_PARSE_STATE_SEARCHING_FOR_REVIEW;
+business_review *review = nullptr;
+while(ifs.good()){
+    std::string line;
+    std::getline(ifs,line);
+    ++line_count;
+
+    const std::string::size_type start_non_ws_pos =
+        line.find_first_not_of( " \n\t\v\f" );
+    const std::string::size_type review_from_pos =
+        line.find( "Review from" );
+    const std::string::size_type date_pos =
+        line.find( "Date:" );
+    const std::string::size_type stars_pos =
+        line.find( "star" );
+    const std::string::size_type first_digit_pos =
+        line.find_first_of( "0123456789" );
+    const std::string::size_type slash_pos =
+        line.find( "/" );
+    const std::string::size_type page_pos =
+        line.find( "Page " );
+
+    /* start new review */
+    if( ( start_non_ws_pos != std::string::npos ) &&
+        ( start_non_ws_pos == review_from_pos ) ){
+        m_reviews.push_back(business_review());
+        review = &(m_reviews.back());
+        review->m_review_type = BUSINESS_REVIEW_TYPE_BBB;
+        review->m_full_name = line.substr(review_from_pos + strlen("Review from"));
+        split_name(review->m_full_name, &(review->m_parsed_name) );
+        parse_state = BBB_2025_PARSE_STATE_SEARCHING_FOR_DATE;
+        }
+
+    switch(parse_state){
+        case BBB_2025_PARSE_STATE_SEARCHING_FOR_REVIEW:
+            /* skip */
+            break;
+        case BBB_2025_PARSE_STATE_SEARCHING_FOR_DATE:
+            if( ( date_pos != std::string::npos ) &&
+                ( slash_pos != std::string::npos ) &&
+                ( first_digit_pos != std::string::npos ) ){
+                review->m_date_str = line.substr(first_digit_pos);
+                const std::string month_str = (review->m_date_str).substr(0,2);
+                const std::string day_str = (review->m_date_str).substr(3,2);
+                const std::string year_str = (review->m_date_str).substr(6,4);
+                const int month_int = atoi(month_str.c_str());
+                const int day_int = atoi(day_str.c_str());
+                const int year_int = atoi(year_str.c_str());
+                (review->m_time_stamp_tm).reset( new tm );
+                tm *tms = (review->m_time_stamp_tm).get();
+                memset( tms, 0, sizeof(tm));
+                tms->tm_year = year_int - 1900;
+                tms->tm_mon =  month_int-1;
+                tms->tm_mday = day_int;
+                tms->tm_hour = 12;
+                tms->tm_min = 0;
+                tms->tm_sec = 0;
+                review->m_time_stamp = mktime(tms);
+                static const time_t time_err_seconds = 12*60*60;
+                review->m_time_stamp_min = (review->m_time_stamp > time_err_seconds) ?
+                    (review->m_time_stamp - time_err_seconds) : 0;
+                review->m_time_stamp_max = review->m_time_stamp + time_err_seconds;
+                struct tm *tms2 = localtime( &(review->m_time_stamp) );
+                parse_state = BBB_2025_PARSE_STATE_SEARCHING_FOR_STARS;                
+                }
+            break;
+        case BBB_2025_PARSE_STATE_SEARCHING_FOR_STARS:
+            if( stars_pos != std::string::npos ){
+                const char star_count_ch = line.at(start_non_ws_pos);
+                review->m_star_count = static_cast<int>(star_count_ch - '0');
+                parse_state = BBB_2025_PARSE_STATE_PARSING_REVIEW_STR;                
+                }
+            break;
+        case BBB_2025_PARSE_STATE_PARSING_REVIEW_STR:
+            if( ( page_pos <= 4 ) && ( line.length() < 12 ) ){
+                parse_state = BBB_2025_PARSE_STATE_SEARCHING_FOR_REVIEW;
+                }
+            else if( std::string::npos != start_non_ws_pos ){
+                if( !(review->m_review_str).empty() ){
+                    (review->m_review_str).append("\t");
+                    }
+                (review->m_review_str).append(line);
+                convert_whitespace_to_space(&(review->m_review_str));
+                trim_str(&(review->m_review_str));
+                }
+            break;
+        case BBB_2025_PARSE_STATE_DONE:
+            break;
+        }
+    }
+std::cout << "total review_count=" << m_reviews.size() << "\n";
+std::cout << "line_count=" << line_count << "\n";
+
+sort_reviews_by_timestamp();
+
+return err_cnt;
+}
+
+
 
 /*
 Consumer Affairs Review

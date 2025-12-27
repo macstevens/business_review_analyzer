@@ -25,7 +25,7 @@
 *       add numeric category to word count file
 *       merge results from various sources
 * 
-BBB Download Instructions
+BBB Download Instructions (2024)
  1. Run Firefox browser
  2. Open web page  https://www.bbb.org/us/ca/calabasas/profile/gold-buyers/goldco-direct-llc-1216-100109958/customer-reviews
  3. Scroll to bottom of web page.  Press [Load More] button.
@@ -34,7 +34,21 @@ BBB Download Instructions
  6. Press ctrl-C to copy.
  7. Open text editor.
  8. Press ctrl-V in text editor to paste text.
- 9. Save file from text editor. 
+ 9. Save file from text editor.
+*
+* 
+BBB Download Instructions (2025)
+ 1. Run Firefox browser
+ 2. Open web page  https://www.bbb.org/us/ca/calabasas/profile/gold-buyers/goldco-direct-llc-1216-100109958/customer-reviews
+ 3. Press ctrl-A to select all text on web page.
+ 4. Press ctrl-C to copy.
+ 5. Open text editor.
+ 6. Press ctrl-V in text editor to paste text (or append text to bottom.
+ 7. Scroll to bottom of web page.  Press [Next] button.
+ 8. This opens page https://www.bbb.org/us/ca/calabasas/profile/precious-metal-dealers/goldco-1216-100109958/customer-reviews?page=2
+    etc.
+ 9. Repeat steps 3-8 until all pages are copied.
+10. Save file from text editor.
 * 
 * 
 Consumer Affairs Download Instructions
@@ -144,6 +158,15 @@ business_review_type parse_file_determine_review_type(
     const std::string& file_name );
 
 
+enum bbb_review_format_type{
+    BBB_REVIEW_FORMAT_TYPE_2024,
+    BBB_REVIEW_FORMAT_TYPE_2025,
+
+    BBB_REVIEW_FORMAT_TYPE_COUNT };
+
+bbb_review_format_type parse_file_determine_bbb_review_format_type(
+    const std::string& file_name );
+
 
 struct business_review{
     business_review_type        m_review_type;
@@ -204,6 +227,15 @@ private:
         BBB_PARSE_STATE_PARSING_REVIEW_STR,
 
         BBB_PARSE_STATE_DONE
+        };
+
+    enum bbb_2025_parse_state{
+        BBB_2025_PARSE_STATE_SEARCHING_FOR_REVIEW,
+        BBB_2025_PARSE_STATE_SEARCHING_FOR_DATE,
+        BBB_2025_PARSE_STATE_SEARCHING_FOR_STARS,
+        BBB_2025_PARSE_STATE_PARSING_REVIEW_STR,
+
+        BBB_2025_PARSE_STATE_DONE
         };
 
     enum consumer_affairs_parse_state{
@@ -330,6 +362,8 @@ public:
 private:
     int reset_working_data();
     int read_review_file_bbb();
+    int read_review_file_bbb_2024();
+    int read_review_file_bbb_2025();
     int read_review_file_consumer_affairs();
     int read_review_file_google();
     int read_review_file_retirement_living();
