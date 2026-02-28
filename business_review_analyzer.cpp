@@ -3878,6 +3878,7 @@ if( nullptr != os ){
         << delim << "rating"
         << delim << "city"
         << delim << "state" 
+        << delim << "maybe_missing" 
         << delim << "review" 
         << "\n";
 
@@ -3943,6 +3944,7 @@ if( nullptr != os ){
             << delim << r.m_star_count
             << delim << r.m_city
             << delim << r.m_state
+            << delim << ( (r.m_maybe_missing ) ? "T" : "F" )
             << delim << r.m_review_str
             << "\n";
         }

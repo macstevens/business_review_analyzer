@@ -21,6 +21,8 @@
 #pragma warning(disable:4996)
 
 /*
+NOTE: You might need special permission from TrustPilot and BBB to do this analysis.
+
 * TODO: word count file
 *       add numeric category to word count file
 *       merge results from various sources
@@ -54,6 +56,7 @@ BBB Download Instructions (2025)
 Consumer Affairs Download Instructions
  1. Run Firefox browser
  2. Open web page https://www.consumeraffairs.com/finance/goldco-precious-metals.html
+ 2.a. (optional) Search for "More" links.  Click on each to expand. 
  3. Save file as html:  Right-click -> Save Page As...  consumer_affairs_goldco_01.htm
  4. Scroll to bottom of web page.  Press [>] button
  5. The following web page should now be open. https://www.consumeraffairs.com/finance/goldco-precious-metals.html?page=2#scroll_to_reviews=true
@@ -84,6 +87,10 @@ TrustLink Download Instructions
  4. At bottom of page, find page number links "1 2 3 4 5 ..." . Click on "2" to load next page of reviews.
  5. Repeat steps 3-4 until all reviews are downloaded.
  6. In text editor, concatenate all resulting .htm files into a single file.
+ 7. (Optional) On the website, for each review, click on its "Read More" link to get the full
+     text of the review.  Copy full review text into the concatenated htm file.
+ 8. Note: as of 2026/01/08, links to pages 12 and 13 produced "error 404" pages.  So the pages
+     downloaded on 2024/04/16 were used instead.
 * 
 * 
 TrustPilot Download Instructions
@@ -99,13 +106,14 @@ Yelp (Recommended) Download Instructions
  1. Open text editor.
  2. Run Firefox browser
  3. Open web page https://www.yelp.com/biz/goldco-calabasas
- 4. Press ctrl-A to select all text on web page.
- 5. Press ctrl-C to copy.
- 6. Open text editor.
- 7. Press ctrl-V in text editor to paste text. 
- 8. At bottom of web page, press [>] button to load next page https://www.yelp.com/biz/goldco-calabasas?start=10
- 9. Repeat steps 4-8 until all reviews are loaded into text editor.
- 10. Manually add rating for each review by inserting a line before the date.  For example:
+ 4. (optional) Click on "Read More" links to expand text.
+ 5. Press ctrl-A to select all text on web page.
+ 6. Press ctrl-C to copy.
+ 7. Open text editor.
+ 8. Press ctrl-V in text editor to paste text. 
+ 9. At bottom of web page, press [>] button to load next page https://www.yelp.com/biz/goldco-calabasas?start=10
+ 10. Repeat steps 4-9 until all reviews are loaded into text editor.
+ 11. Manually add rating for each review by inserting a line before the date.  For example:
     Photo of Conni D.
     Conni D.
     Sun City, AZ
@@ -115,7 +123,7 @@ Yelp (Recommended) Download Instructions
     Nov 11, 2022
 
     I was pleased with the level of service and received answers to all my questions. I couldn't be happier with my advisor, Ben M, who made a complicated process as easy to complete as possible.
- 11. Save file from text editor.
+ 12. Save file from text editor.
 *
 * 
 Yelp (Not Recommended) Download Instructions
