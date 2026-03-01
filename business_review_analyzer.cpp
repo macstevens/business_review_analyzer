@@ -1807,6 +1807,14 @@ for(; raw_review_sb_list.end() != raw_itr; ++raw_itr){
             review->m_date_str = ago_str + "ago";
             review->m_time_stamp = (time_ago < reference_time) ?
                 (reference_time - time_ago) : 0;
+            if( m_reviews.size() > 1 ){
+                const business_review *prev_review =
+                    &( m_reviews.at( m_reviews.size() - 2 ) );
+                /* guarantee non-increasing timestamps */
+                if( review->m_time_stamp > prev_review->m_time_stamp ){
+                    review->m_time_stamp = prev_review->m_time_stamp;
+                    }
+                }
             const time_t time_err_seconds_low = time_unit / 2;
             const time_t time_err_seconds_high = time_unit;
             review->m_time_stamp_min = (review->m_time_stamp > time_err_seconds_low) ?
@@ -1828,6 +1836,8 @@ for(; raw_review_sb_list.end() != raw_itr; ++raw_itr){
 
         }
     }
+
+std::reverse( m_reviews.begin(), m_reviews.end() );
 
 err_cnt += attempt_equalize_timestamp_intervals();
 
@@ -3223,6 +3233,19 @@ if( m_reviews.size() > 2 ){
                 (t_b < t_b_new) ? t_b_new - t_b : t_b - t_b_new;
             if( delta_time_seconds > max_delta_time_seconds ) {
                 max_delta_time_seconds = delta_time_seconds;
+                }
+
+            if( ( t_a > t_b ) || ( t_b > t_c ) || 
+                ( t_ac_mid > t_c ) || ( t_a > t_ac_mid ) ){
+                static bool once = false;
+                if( !once ){
+                    once = true;
+                    std::cout << bbbrv_itr_b->m_full_name << "\n";
+                    std::cout << "t_a=" << t_a << "\n";
+                    std::cout << "t_b=" << t_b << "\n";
+                    std::cout << "t_c=" << t_c << "\n";
+                    std::cout << "t_ac_mid=" << t_ac_mid << "\n";
+                    }
                 }
             
             bbbrv_itr_b->m_time_stamp = t_b_new;
